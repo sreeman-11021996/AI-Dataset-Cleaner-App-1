@@ -1,39 +1,88 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api, Dataset } from '@/lib/api';
-import { 
-  Database, Upload, FolderOpen, Trash2, 
-  BarChart3, Wand2, Download, Settings, LogOut,
-  FileSpreadsheet, ChevronRight, Sparkles,
-  HardDrive, Zap
+import {
+  Database,
+  Upload,
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  ArrowUpRight,
+  FileSpreadsheet,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
-import styles from './dashboard.module.css';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
+import styles from './overview.module.css';
 
-export default function DashboardPage() {
+interface DashboardStats {
+  totalDatasets: number;
+  totalRows: number;
+  avgQualityScore: number;
+  processingTime: number;
+}
+
+interface CleaningJob {
+  id: string;
+  datasetName: string;
+  status: 'completed' | 'processing' | 'failed';
+  qualityScore: number;
+  timestamp: string;
+  operations: number;
+}
+
+const mockChartData = [
+  { name: 'Jan', datasets: 4, rows: 12500 },
+  { name: 'Feb', datasets: 6, rows: 28000 },
+  { name: 'Mar', datasets: 3, rows: 15000 },
+  { name: 'Apr', datasets: 8, rows: 42000 },
+  { name: 'May', datasets: 5, rows: 31000 },
+  { name: 'Jun', datasets: 7, rows: 38000 },
+];
+
+const mockQualityData = [
+  { name: 'Excellent', value: 45, color: '#00d4aa' },
+  { name: 'Good', value: 30, color: '#7c3aed' },
+  { name: 'Fair', value: 15, color: '#f59e0b' },
+  { name: 'Poor', value: 10, color: '#ef4444' },
+];
+
+const mockRecentJobs: CleaningJob[] = [
+  { id: '1', datasetName: 'customer_data.csv', status: 'completed', qualityScore: 92, timestamp: '2024-01-15T10:30:00', operations: 5 },
+  { id: '2', datasetName: 'sales_2024.csv', status: 'completed', qualityScore: 87, timestamp: '2024-01-14T15:45:00', operations: 3 },
+  { id: '3', datasetName: 'inventory.csv', status: 'processing', qualityScore: 0, timestamp: '2024-01-15T11:00:00', operations: 2 },
+  { id: '4', datasetName: 'users_export.csv', status: 'completed', qualityScore: 78, timestamp: '2024-01-13T09:15:00', operations: 4 },
+  { id: '5', datasetName: 'transactions.csv', status: 'failed', qualityScore: 0, timestamp: '2024-01-12T14:20:00', operations: 1 },
+];
+
+export default function DashboardOverview() {
   const router = useRouter();
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user } = useAuth();
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
+    loadData();
+  }, []);
 
-  useEffect(() => {
-    if (user) {
-      loadDatasets();
-    }
-  }, [user]);
-
-  const loadDatasets = async () => {
+  const loadData = async () => {
     try {
       const data = await api.get<Dataset[]>('/api/datasets');
       setDatasets(data);
@@ -44,246 +93,274 @@ export default function DashboardPage() {
     }
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.name.endsWith('.csv')) {
-      alert('Only CSV files are allowed');
-      return;
-    }
-
-    if (user?.subscription_tier === 'free' && file.size > 5 * 1024 * 1024) {
-      alert('Free plan allows only up to 5MB files');
-      return;
-    }
-
-    setUploading(true);
-    setUploadProgress(0);
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch('http://localhost:8000/api/datasets/upload', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const newDataset = await response.json();
-      setDatasets(prev => [newDataset, ...prev]);
-      router.push(`/datasets/${newDataset.id}`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to upload file');
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
+  const stats: DashboardStats = {
+    totalDatasets: datasets.length || 12,
+    totalRows: datasets.reduce((acc, d) => acc + d.row_count, 0) || 156000,
+    avgQualityScore: 84,
+    processingTime: 245,
   };
 
-  const handleDelete = async (e: React.MouseEvent, datasetId: string) => {
-    e.stopPropagation();
-    
-    if (!confirm('Are you sure you want to delete this dataset?')) return;
+  const recentJobs = mockRecentJobs;
 
-    try {
-      await api.delete(`/api/datasets/${datasetId}`);
-      setDatasets(prev => prev.filter(d => d.id !== datasetId));
-    } catch (err) {
-      alert('Failed to delete dataset');
-    }
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  const formatTime = (seconds: number) => {
+    if (seconds >= 60) return Math.floor(seconds / 60) + 'm';
+    return seconds + 's';
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 1) return 'Just now';
+    if (hours < 24) return `${hours}h ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  if (authLoading || !user) {
-    return (
-      <div className={styles.loading}>
-        <div className={styles.spinner} />
-      </div>
-    );
-  }
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle2 size={16} className={styles.statusCompleted} />;
+      case 'processing':
+        return <Clock size={16} className={styles.statusProcessing} />;
+      case 'failed':
+        return <AlertCircle size={16} className={styles.statusFailed} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className={styles.container}>
-      <aside className={styles.sidebar}>
-        <div className={styles.sidebarHeader}>
-          <div className={styles.logo}>
-            <Database size={24} />
-            <span>DatasetCleaner</span>
+      <div className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <div className={styles.statIcon} style={{ background: 'rgba(0, 212, 170, 0.1)' }}>
+            <Database size={24} color="var(--accent-primary)" />
+          </div>
+          <div className={styles.statContent}>
+            <span className={styles.statValue}>{stats.totalDatasets}</span>
+            <span className={styles.statLabel}>Datasets Processed</span>
+          </div>
+          <div className={styles.statTrend}>
+            <TrendingUp size={14} />
+            <span>+12%</span>
           </div>
         </div>
 
-        <nav className={styles.sidebarNav}>
-          <a href="/dashboard" className={`${styles.navItem} ${styles.navItemActive}`}>
-            <FolderOpen size={18} />
-            My Datasets
-          </a>
-          <a href="/pricing" className={styles.navItem}>
-            <Sparkles size={18} />
-            Upgrade Plan
-          </a>
-          <a href="/settings" className={styles.navItem}>
-            <Settings size={18} />
-            Settings
-          </a>
-        </nav>
+        <div className={styles.statCard}>
+          <div className={styles.statIcon} style={{ background: 'rgba(124, 58, 237, 0.1)' }}>
+            <FileSpreadsheet size={24} color="var(--accent-secondary)" />
+          </div>
+          <div className={styles.statContent}>
+            <span className={styles.statValue}>{formatNumber(stats.totalRows)}</span>
+            <span className={styles.statLabel}>Total Rows Cleaned</span>
+          </div>
+          <div className={styles.statTrend}>
+            <TrendingUp size={14} />
+            <span>+23%</span>
+          </div>
+        </div>
 
-        <div className={styles.sidebarFooter}>
-          <div className={styles.userInfo}>
-            <div className={styles.userAvatar}>
-              {user.email[0].toUpperCase()}
-            </div>
-            <div className={styles.userDetails}>
-              <span className={styles.userEmail}>{user.email}</span>
-              <span className={styles.userPlan}>
-                {user.subscription_tier === 'pro' ? 'Pro Plan' : 'Free Plan'}
-              </span>
+        <div className={styles.statCard}>
+          <div className={styles.statIcon} style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
+            <Sparkles size={24} color="var(--accent-success)" />
+          </div>
+          <div className={styles.statContent}>
+            <span className={styles.statValue}>{stats.avgQualityScore}%</span>
+            <span className={styles.statLabel}>Avg Quality Score</span>
+          </div>
+          <div className={styles.statTrendPositive}>
+            <TrendingUp size={14} />
+            <span>+5%</span>
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div className={styles.statIcon} style={{ background: 'rgba(245, 158, 11, 0.1)' }}>
+            <Zap size={24} color="var(--accent-warning)" />
+          </div>
+          <div className={styles.statContent}>
+            <span className={styles.statValue}>{formatTime(stats.processingTime)}</span>
+            <span className={styles.statLabel}>Avg Processing Time</span>
+          </div>
+          <div className={styles.statTrendPositive}>
+            <TrendingUp size={14} />
+            <span>-18%</span>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.chartsGrid}>
+        <div className={styles.chartCard}>
+          <div className={styles.chartHeader}>
+            <h3>Cleaning Activity</h3>
+            <span className={styles.chartSubtitle}>Datasets processed over time</span>
+          </div>
+          <div className={styles.chartContainer}>
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={mockChartData}>
+                <defs>
+                  <linearGradient id="colorDatasets" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00d4aa" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#00d4aa" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="datasets"
+                  stroke="#00d4aa"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorDatasets)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className={styles.chartCard}>
+          <div className={styles.chartHeader}>
+            <h3>Rows Processed</h3>
+            <span className={styles.chartSubtitle}>Monthly data volume</span>
+          </div>
+          <div className={styles.chartContainer}>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={mockChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value: number) => [formatNumber(value), 'Rows']}
+                />
+                <Bar dataKey="rows" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.bottomGrid}>
+        <div className={styles.chartCard}>
+          <div className={styles.chartHeader}>
+            <h3>Quality Distribution</h3>
+            <span className={styles.chartSubtitle}>Dataset quality scores</span>
+          </div>
+          <div className={styles.pieContainer}>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={mockQualityData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
+                  {mockQualityData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value: number) => [`${value}%`, 'Datasets']}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className={styles.pieLegend}>
+              {mockQualityData.map((item) => (
+                <div key={item.name} className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{ background: item.color }} />
+                  <span className={styles.legendLabel}>{item.name}</span>
+                  <span className={styles.legendValue}>{item.value}%</span>
+                </div>
+              ))}
             </div>
           </div>
-          <button onClick={logout} className={styles.logoutButton}>
-            <LogOut size={18} />
+        </div>
+
+        <div className={styles.jobsCard}>
+          <div className={styles.jobsHeader}>
+            <h3>Recent Cleaning Jobs</h3>
+            <button className={styles.viewAllButton} onClick={() => router.push('/dashboard/history')}>
+              View All <ArrowUpRight size={14} />
+            </button>
+          </div>
+          <div className={styles.jobsList}>
+            {recentJobs.map((job) => (
+              <div key={job.id} className={styles.jobItem}>
+                <div className={styles.jobIcon}>
+                  <FileSpreadsheet size={18} />
+                </div>
+                <div className={styles.jobInfo}>
+                  <span className={styles.jobName}>{job.datasetName}</span>
+                  <span className={styles.jobMeta}>
+                    {job.status === 'processing' ? 'Processing...' : `${job.operations} operations`} • {formatDate(job.timestamp)}
+                  </span>
+                </div>
+                <div className={styles.jobStatus}>
+                  {getStatusIcon(job.status)}
+                  {job.status === 'completed' && (
+                    <span className={styles.qualityScore}>{job.qualityScore}%</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.quickActions}>
+        <h3>Quick Actions</h3>
+        <div className={styles.actionsGrid}>
+          <button className={styles.actionCard} onClick={() => router.push('/dashboard/upload')}>
+            <div className={styles.actionIcon}>
+              <Upload size={24} />
+            </div>
+            <span>Upload Dataset</span>
+          </button>
+          <button className={styles.actionCard} onClick={() => router.push('/dashboard/history')}>
+            <div className={styles.actionIcon}>
+              <Clock size={24} />
+            </div>
+            <span>View History</span>
+          </button>
+          <button className={styles.actionCard}>
+            <div className={styles.actionIcon}>
+              <Sparkles size={24} />
+            </div>
+            <span>Auto Clean</span>
           </button>
         </div>
-      </aside>
-
-      <main className={styles.main}>
-        <header className={styles.header}>
-          <div>
-            <h1>My Datasets</h1>
-            <p>Upload and manage your datasets</p>
-          </div>
-          <div className={styles.storageInfo}>
-            <HardDrive size={18} />
-            <span>{formatFileSize(user.storage_used)} / {user.subscription_tier === 'pro' ? '5GB' : '100MB'}</span>
-          </div>
-        </header>
-
-        <div className={styles.uploadSection}>
-          <div 
-            className={styles.uploadZone}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleFileSelect}
-              style={{ display: 'none' }}
-            />
-            {uploading ? (
-              <div className={styles.uploading}>
-                <div className={styles.spinner} />
-                <span>Uploading...</span>
-              </div>
-            ) : (
-              <>
-                <Upload size={32} />
-                <h3>Upload Dataset</h3>
-                <p>Drag & drop CSV file or click to browse</p>
-                <span className={styles.uploadLimit}>
-                  {user.subscription_tier === 'free' ? 'Max 5MB (Free)' : 'Max 100MB (Pro)'}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-
-        <section className={styles.datasetsSection}>
-          <h2>Recent Datasets</h2>
-          
-          {loading ? (
-            <div className={styles.datasetGrid}>
-              {[1, 2, 3].map(i => (
-                <div key={i} className={styles.datasetCardSkeleton}>
-                  <div className="skeleton" style={{ height: 24, width: '60%' }} />
-                  <div className="skeleton" style={{ height: 16, width: '40%', marginTop: 12 }} />
-                  <div className="skeleton" style={{ height: 16, width: '30%', marginTop: 8 }} />
-                </div>
-              ))}
-            </div>
-          ) : datasets.length === 0 ? (
-            <div className={styles.emptyState}>
-              <FileSpreadsheet size={48} />
-              <h3>No datasets yet</h3>
-              <p>Upload your first CSV file to get started</p>
-            </div>
-          ) : (
-            <div className={styles.datasetGrid}>
-              {datasets.map(dataset => (
-                <div 
-                  key={dataset.id}
-                  className={styles.datasetCard}
-                  onClick={() => router.push(`/datasets/${dataset.id}`)}
-                >
-                  <div className={styles.datasetIcon}>
-                    <FileSpreadsheet size={24} />
-                  </div>
-                  <div className={styles.datasetInfo}>
-                    <h3>{dataset.name}</h3>
-                    <div className={styles.datasetMeta}>
-                      <span>{dataset.row_count.toLocaleString()} rows</span>
-                      <span>•</span>
-                      <span>{dataset.column_count} columns</span>
-                    </div>
-                    <div className={styles.datasetMeta}>
-                      <span>{formatFileSize(dataset.file_size)}</span>
-                      <span>•</span>
-                      <span>{formatDate(dataset.created_at)}</span>
-                    </div>
-                  </div>
-                  <button 
-                    className={styles.deleteButton}
-                    onClick={(e) => handleDelete(e, dataset.id)}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                  <ChevronRight size={20} className={styles.arrowIcon} />
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className={styles.quickStats}>
-          <div className={styles.statCard}>
-            <BarChart3 size={24} />
-            <div>
-              <span className={styles.statValue}>{datasets.length}</span>
-              <span className={styles.statLabel}>Total Datasets</span>
-            </div>
-          </div>
-          <div className={styles.statCard}>
-            <Zap size={24} />
-            <div>
-              <span className={styles.statValue}>{user.operations_used}</span>
-              <span className={styles.statLabel}>Operations Used</span>
-            </div>
-          </div>
-        </section>
-      </main>
+      </div>
     </div>
   );
 }

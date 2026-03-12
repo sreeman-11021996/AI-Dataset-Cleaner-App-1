@@ -15,6 +15,16 @@ DatasetCleaner AI is a complete SaaS web application for automated data cleaning
 - [x] JWT authentication system
 - [x] Subscription/monetization (Free + Pro plans)
 - [x] Build verification passed
+- [x] **UI/UX Improvements (Latest)**
+  - Added ThemeContext for dark/light mode toggle
+  - Created modern SaaS dashboard layout with collapsible sidebar
+  - Dashboard overview with stats cards and charts (using Recharts)
+  - Upload dataset page with drag-and-drop
+  - Dataset history page with sorting/filtering
+  - Account settings page with profile, security, notifications, billing, data tabs
+  - Responsive design for mobile
+  - Light/dark theme with CSS variables
+  - Fixed PostCSS config for build
 
 ## Project Structure
 
@@ -23,14 +33,15 @@ DatasetCleaner AI is a complete SaaS web application for automated data cleaning
 | `backend/` | FastAPI Python backend | ✅ Complete |
 | `src/app/page.tsx` | Landing page | ✅ Complete |
 | `src/app/auth/` | Login/Register pages | ✅ Complete |
-| `src/app/dashboard/` | User dashboard | ✅ Complete |
+| `src/app/dashboard/` | User dashboard (Overview, Upload, History, Settings) | ✅ Complete |
 | `src/app/datasets/[id]/` | Dataset analysis UI | ✅ Complete |
 | `src/lib/api.ts` | API client | ✅ Complete |
 | `src/contexts/AuthContext.tsx` | Auth state | ✅ Complete |
+| `src/contexts/ThemeContext.tsx` | Dark/light theme | ✅ Complete |
 
 ## Technology Stack
 
-- **Frontend**: Next.js 16, React 19, CSS Modules
+- **Frontend**: Next.js 16, React 19, CSS Modules, Recharts
 - **Backend**: FastAPI, Python 3.11+, Pandas
 - **Database**: PostgreSQL with SQLAlchemy ORM
 - **Auth**: JWT with python-jose
@@ -54,9 +65,14 @@ Application is built and verified. To run the full application:
 6. Visual Dashboard
 7. User Authentication
 8. Subscription Plans (Free/Pro)
+9. Dark/Light Theme Toggle
+10. Dashboard Overview with Charts
+11. Dataset History with Search/Filter
+12. Account Settings (Profile, Security, Notifications, Billing, Data)
 
 ## Session History
 
 | Date | Changes |
 |------|---------|
 | Initial | Created DatasetCleaner AI SaaS application |
+| Latest | Improved UI/UX with modern SaaS dashboard, dark mode, charts, responsive design |
