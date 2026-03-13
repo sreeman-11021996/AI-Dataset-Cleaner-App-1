@@ -92,10 +92,11 @@ Application is built and verified. To run the full application:
 12. Dashboard Overview with Charts
 13. Dataset History with Search/Filter
 14. Account Settings (Profile, Security, Notifications, Billing, Data)
+15. Password Reset (forgot-password, reset-password pages)
 
 ## Session History
 
 | Date | Changes |
 |------|---------|
 | Initial | Created DatasetCleaner AI SaaS application |
-| Latest | Added AI cleaning recommendations; Added Auto Clean Pipeline with progress bar and status updates |
+| Latest | Added AI cleaning recommendations; Added Auto Clean Pipeline with progress bar and status updates; Added password reset UI pages (forgot-password, reset-password)
