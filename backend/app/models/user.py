@@ -116,6 +116,8 @@ class Dataset(Base):
     row_count = Column(Integer)
     column_count = Column(Integer)
     columns = Column(JSONB)
+    original_source = Column(String(50), nullable=True)  # upload, kaggle
+    original_url = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

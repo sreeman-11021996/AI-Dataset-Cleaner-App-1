@@ -15,6 +15,9 @@ import {
   Clock,
   ArrowRight,
   Sparkles,
+  Link2,
+  Loader2,
+  ExternalLink,
 } from 'lucide-react';
 import styles from './upload.module.css';
 
@@ -39,6 +42,11 @@ export default function UploadPage() {
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [newDataset, setNewDataset] = useState<Dataset | null>(null);
+  const [activeTab, setActiveTab] = useState<'upload' | 'kaggle'>('upload');
+  const [kaggleUrl, setKaggleUrl] = useState('');
+  const [kaggleStatus, setKaggleStatus] = useState<'idle' | 'validating' | 'importing' | 'success' | 'error'>('idle');
+  const [kaggleError, setKaggleError] = useState<string>('');
+  const [kaggleDatasetInfo, setKaggleDatasetInfo] = useState<{owner: string; dataset_name: string; display_name: string} | null>(null);
 
   const handleFile = useCallback(async (file: File) => {
     const allowedExtensions = ['.csv', '.xlsx', '.json'];
@@ -78,51 +86,28 @@ export default function UploadPage() {
       let progress = 0;
       const progressInterval = setInterval(() => {
         progress += Math.random() * 20;
-        if (progress > 90) {
-          progress = 90;
-          clearInterval(progressInterval);
-        }
-        setUploadedFile(prev => prev ? { ...prev, progress } : null);
+        if (progress > 90) clearInterval(progressInterval);
+        setUploadedFile(prev => prev ? { ...prev, progress: Math.min(progress, 90) } : null);
       }, 200);
 
-      const response = await fetch('http://localhost:8000/api/datasets/upload', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-
-      clearInterval(progressInterval);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Upload failed');
-      }
-
-      const dataset = await response.json();
+      const response = await api.post<Dataset>('/api/datasets/upload', formData);
       
-      setUploadedFile({
-        file,
-        status: 'success',
-        progress: 100,
-      });
-      setNewDataset(dataset);
+      clearInterval(progressInterval);
+      setUploadedFile(prev => prev ? { ...prev, progress: 100, status: 'success' } : null);
+      setNewDataset(response);
       setUploadComplete(true);
-    } catch (err: any) {
-      setUploadedFile({
-        file,
-        status: 'error',
-        progress: 0,
-        error: err.message || 'Failed to upload file',
-      });
+    } catch (error: any) {
+      setUploadedFile(prev => prev ? { 
+        ...prev, 
+        status: 'error', 
+        error: error.message || 'Upload failed. Please try again.' 
+      } : null);
     }
   }, [user]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
   }, [handleFile]);
@@ -163,6 +148,63 @@ export default function UploadPage() {
     return FileText;
   };
 
+  const validateKaggleUrl = async (url: string) => {
+    if (!url.trim()) {
+      setKaggleDatasetInfo(null);
+      setKaggleStatus('idle');
+      return;
+    }
+
+    setKaggleStatus('validating');
+    try {
+      const response = await fetch(`/api/datasets/import/kaggle/validate?url=${encodeURIComponent(url)}`);
+      const data = await response.json();
+      
+      if (data.valid) {
+        setKaggleDatasetInfo({
+          owner: data.owner,
+          dataset_name: data.dataset_name,
+          display_name: data.display_name,
+        });
+        setKaggleStatus('idle');
+        setKaggleError('');
+      } else {
+        setKaggleDatasetInfo(null);
+        setKaggleStatus('error');
+        setKaggleError(data.error || 'Invalid Kaggle URL');
+      }
+    } catch (error) {
+      setKaggleDatasetInfo(null);
+      setKaggleStatus('error');
+      setKaggleError('Failed to validate URL');
+    }
+  };
+
+  const handleKaggleImport = async () => {
+    if (!kaggleDatasetInfo) return;
+    
+    setKaggleStatus('importing');
+    try {
+      const response = await api.post<Dataset>('/api/datasets/import/kaggle', {
+        url: kaggleUrl,
+      });
+      setKaggleStatus('success');
+      setNewDataset(response);
+      setUploadComplete(true);
+    } catch (error: any) {
+      setKaggleStatus('error');
+      setKaggleError(error.message || 'Failed to import from Kaggle');
+    }
+  };
+
+  const resetAll = () => {
+    resetUpload();
+    setKaggleUrl('');
+    setKaggleStatus('idle');
+    setKaggleError('');
+    setKaggleDatasetInfo(null);
+  };
+
   if (uploadComplete && newDataset) {
     return (
       <div className={styles.container}>
@@ -174,15 +216,15 @@ export default function UploadPage() {
           <p>Your dataset has been uploaded and is ready for cleaning.</p>
           
           <div className={styles.datasetPreview}>
-            <div className={previewStyles.fileIcon}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48, background: 'rgba(0, 212, 170, 0.1)', color: 'var(--accent-primary)', borderRadius: 10 }}>
               {(() => {
                 const Icon = getFileIcon(newDataset.name);
                 return <Icon size={24} />;
               })()}
             </div>
-            <div className={previewStyles.fileInfo}>
-              <span className={previewStyles.fileName}>{newDataset.name}</span>
-              <span className={previewStyles.fileMeta}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <span style={{ fontWeight: 500, fontSize: '0.9375rem' }}>{newDataset.name}</span>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
                 {newDataset.row_count.toLocaleString()} rows • {newDataset.column_count} columns • {formatFileSize(newDataset.file_size)}
               </span>
             </div>
@@ -192,7 +234,7 @@ export default function UploadPage() {
             <button className="btn btn-primary" onClick={() => router.push(`/datasets/${newDataset.id}`)}>
               Clean Dataset <ArrowRight size={18} />
             </button>
-            <button className="btn btn-secondary" onClick={resetUpload}>
+            <button className="btn btn-secondary" onClick={resetAll}>
               Upload Another
             </button>
           </div>
@@ -205,95 +247,251 @@ export default function UploadPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h2>Upload Dataset</h2>
-        <p>Drag and drop your file or click to browse. We support CSV, Excel, and JSON formats.</p>
+        <p>Import your data from a file or directly from Kaggle</p>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        <button
+          onClick={() => setActiveTab('upload')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.75rem 1.25rem',
+            background: activeTab === 'upload' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+            color: activeTab === 'upload' ? '#000' : 'var(--text-primary)',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          <Upload size={18} />
+          Upload File
+        </button>
+        <button
+          onClick={() => setActiveTab('kaggle')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.75rem 1.25rem',
+            background: activeTab === 'kaggle' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+            color: activeTab === 'kaggle' ? '#000' : 'var(--text-primary)',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          <Link2 size={18} />
+          Import from Kaggle
+        </button>
       </div>
 
       <div className={styles.uploadArea}>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,.xlsx,.json"
-          onChange={handleFileSelect}
-          className={styles.fileInput}
-        />
-        
-        {!uploadedFile ? (
-          <div
-            className={`${styles.dropZone} ${isDragging ? styles.dropZoneActive : ''}`}
-            onClick={() => fileInputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-          >
-            <div className={styles.dropIcon}>
-              <Upload size={40} />
+        {activeTab === 'kaggle' ? (
+          <div className={styles.kaggleSection}>
+            <div className={styles.kaggleHeader}>
+              <span style={{ fontWeight: 600, fontSize: '1.125rem' }}>Import from Kaggle</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>Download datasets directly from Kaggle</span>
             </div>
-            <h3>Drop your file here</h3>
-            <p>or click to browse</p>
-            <div className={styles.allowedTypes}>
-              {acceptedTypes.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <span key={type.ext} className={styles.typeBadge}>
-                    <Icon size={14} />
-                    {type.label}
-                  </span>
-                );
-              })}
+            
+            <div className={styles.kaggleForm}>
+              <input
+                type="url"
+                placeholder="Paste Kaggle dataset URL (e.g., https://www.kaggle.com/datasets/username/dataset-name)"
+                value={kaggleUrl}
+                onChange={(e) => {
+                  setKaggleUrl(e.target.value);
+                  validateKaggleUrl(e.target.value);
+                }}
+                disabled={kaggleStatus === 'importing'}
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1rem',
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.9375rem',
+                }}
+              />
+              
+              {kaggleStatus === 'validating' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                  <Loader2 size={16} className={styles.spinIcon} />
+                  Validating URL...
+                </div>
+              )}
+              
+              {kaggleDatasetInfo && kaggleStatus !== 'error' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48, background: 'rgba(0, 212, 170, 0.1)', color: 'var(--accent-primary)', borderRadius: 10 }}>
+                    <FileSpreadsheet size={24} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 500, fontSize: '0.9375rem' }}>{kaggleDatasetInfo.display_name}</div>
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>by {kaggleDatasetInfo.owner}</div>
+                  </div>
+                </div>
+              )}
+              
+              {kaggleStatus === 'error' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-error)', fontSize: '0.875rem' }}>
+                  <AlertCircle size={16} />
+                  {kaggleError}
+                </div>
+              )}
+              
+              {kaggleStatus === 'importing' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                  <Loader2 size={16} className={styles.spinIcon} />
+                  Importing dataset from Kaggle...
+                </div>
+              )}
+              
+              <button
+                onClick={handleKaggleImport}
+                disabled={!kaggleDatasetInfo || kaggleStatus === 'importing'}
+                style={{
+                  width: '100%',
+                  padding: '0.875rem',
+                  background: 'var(--accent-primary)',
+                  color: '#000',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  cursor: (!kaggleDatasetInfo || kaggleStatus === 'importing') ? 'not-allowed' : 'pointer',
+                  opacity: (!kaggleDatasetInfo || kaggleStatus === 'importing') ? 0.6 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                {kaggleStatus === 'importing' ? (
+                  <>
+                    <Loader2 size={18} className={styles.spinIcon} />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={18} />
+                    Import Dataset
+                  </>
+                )}
+              </button>
+              
+              <a 
+                href="https://www.kaggle.com/datasets" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  color: 'var(--accent-primary)',
+                  fontSize: '0.9375rem',
+                  textDecoration: 'none',
+                }}
+              >
+                Browse Kaggle Datasets
+                <ExternalLink size={14} />
+              </a>
             </div>
           </div>
         ) : (
-          <div className={styles.uploadProgress}>
-            <div className={styles.fileInfo}>
-              <div className={styles.fileIcon}>
-                {(() => {
-                  const Icon = getFileIcon(uploadedFile.file.name);
-                  return <Icon size={24} />;
-                })()}
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.json"
+              onChange={handleFileSelect}
+              className={styles.fileInput}
+            />
+            
+            {uploadedFile ? (
+              <div className={styles.uploadProgress}>
+                <div className={styles.fileInfo}>
+                  <div className={styles.fileIcon}>
+                    {(() => {
+                      const Icon = getFileIcon(uploadedFile.file.name);
+                      return <Icon size={24} />;
+                    })()}
+                  </div>
+                  <div className={styles.fileDetails}>
+                    <span className={styles.fileName}>{uploadedFile.file.name}</span>
+                    <span className={styles.fileSize}>{formatFileSize(uploadedFile.file.size)}</span>
+                  </div>
+                  <button 
+                    className={styles.removeButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      resetUpload();
+                    }}
+                  >
+                    <XCircle size={20} />
+                  </button>
+                </div>
+
+                <div className={styles.progressBar}>
+                  <div 
+                    className={`${styles.progressFill} ${uploadedFile.status === 'success' ? styles.progressSuccess : ''} ${uploadedFile.status === 'error' ? styles.progressError : ''}`}
+                    style={{ width: `${uploadedFile.progress}%` }}
+                  />
+                </div>
+
+                <div className={styles.uploadStatus}>
+                  {uploadedFile.status === 'uploading' && (
+                    <>
+                      <Clock size={16} className={styles.spinIcon} />
+                      <span>Uploading... {Math.round(uploadedFile.progress)}%</span>
+                    </>
+                  )}
+                  {uploadedFile.status === 'success' && (
+                    <>
+                      <CheckCircle2 size={16} />
+                      <span>Upload complete!</span>
+                    </>
+                  )}
+                  {uploadedFile.status === 'error' && (
+                    <>
+                      <XCircle size={16} />
+                      <span>{uploadedFile.error}</span>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className={styles.fileDetails}>
-                <span className={styles.fileName}>{uploadedFile.file.name}</span>
-                <span className={styles.fileSize}>{formatFileSize(uploadedFile.file.size)}</span>
-              </div>
-              <button 
-                className={styles.removeButton}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  resetUpload();
-                }}
+            ) : (
+              <div
+                className={`${styles.dropZone} ${isDragging ? styles.dropZoneActive : ''}`}
+                onClick={() => fileInputRef.current?.click()}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
               >
-                <XCircle size={20} />
-              </button>
-            </div>
-
-            <div className={styles.progressBar}>
-              <div 
-                className={`${styles.progressFill} ${uploadedFile.status === 'success' ? styles.progressSuccess : ''} ${uploadedFile.status === 'error' ? styles.progressError : ''}`}
-                style={{ width: `${uploadedFile.progress}%` }}
-              />
-            </div>
-
-            <div className={styles.uploadStatus}>
-              {uploadedFile.status === 'uploading' && (
-                <>
-                  <Clock size={16} className={styles.spinIcon} />
-                  <span>Uploading... {Math.round(uploadedFile.progress)}%</span>
-                </>
-              )}
-              {uploadedFile.status === 'success' && (
-                <>
-                  <CheckCircle2 size={16} />
-                  <span>Upload complete!</span>
-                </>
-              )}
-              {uploadedFile.status === 'error' && (
-                <>
-                  <AlertCircle size={16} />
-                  <span>{uploadedFile.error}</span>
-                </>
-              )}
-            </div>
-          </div>
+                <div className={styles.dropIcon}>
+                  <Upload size={40} />
+                </div>
+                <h3>Drop your file here</h3>
+                <p>or click to browse</p>
+                <div className={styles.allowedTypes}>
+                  {acceptedTypes.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                      <span key={type.ext} className={styles.typeBadge}>
+                        <Icon size={14} />
+                        {type.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -330,10 +528,3 @@ export default function UploadPage() {
     </div>
   );
 }
-
-const previewStyles = {
-  fileIcon: "display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: rgba(0, 212, 170, 0.1); color: var(--accent-primary); border-radius: 10px;",
-  fileInfo: "display: flex; flex-direction: column; gap: 0.25rem;",
-  fileName: "font-weight: 500; font-size: 0.9375rem;",
-  fileMeta: "font-size: 0.8125rem; color: var(--text-muted);",
-};
