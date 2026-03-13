@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, BigInteger, DateTime, Enum, ForeignKey, Text
+from sqlalchemy import Column, String, Integer, BigInteger, DateTime, Enum, ForeignKey, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -17,13 +17,25 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)  # Nullable for OAuth users
     name = Column(String(255))
     subscription_tier = Column(Enum(SubscriptionTier), default=SubscriptionTier.free)
     storage_used = Column(BigInteger, default=0)
     operations_used = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # OAuth fields
+    oauth_provider = Column(String(50), nullable=True)
+    oauth_id = Column(String(255), nullable=True)
+    
+    # Password reset fields
+    reset_token = Column(String(255), nullable=True)
+    reset_token_expires = Column(DateTime, nullable=True)
+    
+    # Email verification
+    is_verified = Column(Boolean, default=False)
+    verification_token = Column(String(255), nullable=True)
 
     datasets = relationship("Dataset", back_populates="user")
 
