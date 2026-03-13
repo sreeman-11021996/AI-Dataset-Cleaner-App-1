@@ -40,30 +40,27 @@ export default function UploadPage() {
   const [uploadComplete, setUploadComplete] = useState(false);
   const [newDataset, setNewDataset] = useState<Dataset | null>(null);
 
-  const validateFile = (file: File): string | null => {
-    const maxSize = user?.subscription_tier === 'pro' ? 100 * 1024 * 1024 : 5 * 1024 * 1024;
+  const handleFile = useCallback(async (file: File) => {
     const allowedExtensions = ['.csv', '.xlsx', '.json'];
+    const maxSize = user?.subscription_tier === 'pro' ? 100 * 1024 * 1024 : 5 * 1024 * 1024;
     
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
     if (!allowedExtensions.includes(ext)) {
-      return 'Invalid file type. Please upload CSV, Excel, or JSON files.';
-    }
-    
-    if (file.size > maxSize) {
-      return `File too large. Maximum size is ${user?.subscription_tier === 'pro' ? '100MB' : '5MB'}.`;
-    }
-    
-    return null;
-  };
-
-  const handleFile = useCallback(async (file: File) => {
-    const error = validateFile(file);
-    if (error) {
       setUploadedFile({
         file,
         status: 'error',
         progress: 0,
-        error,
+        error: 'Invalid file type. Please upload CSV, Excel, or JSON files.',
+      });
+      return;
+    }
+    
+    if (file.size > maxSize) {
+      setUploadedFile({
+        file,
+        status: 'error',
+        progress: 0,
+        error: `File too large. Maximum size is ${user?.subscription_tier === 'pro' ? '100MB' : '5MB'}.`,
       });
       return;
     }

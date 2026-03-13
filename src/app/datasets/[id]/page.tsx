@@ -58,12 +58,14 @@ export default function DatasetPage() {
   useEffect(() => {
     if (!user) return;
     loadDataset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, datasetId]);
 
   useEffect(() => {
     if (activeTab === 'preview' && !preview) loadPreview();
     if (activeTab === 'analysis' && !analysis) loadAnalysis();
     if (activeTab === 'clean' && suggestions.length === 0) loadSuggestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const loadDataset = async () => {
