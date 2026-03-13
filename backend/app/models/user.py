@@ -95,6 +95,10 @@ class User(Base):
     subscription_status = Column(String(50), nullable=True)  # active, cancelled, past_due
     subscription_start_date = Column(DateTime, nullable=True)
     subscription_end_date = Column(DateTime, nullable=True)
+    
+    # API key fields
+    api_key = Column(String(64), nullable=True)
+    api_key_created_at = Column(DateTime, nullable=True)
 
     datasets = relationship("Dataset", back_populates="user")
     team = relationship("Team", back_populates="members")

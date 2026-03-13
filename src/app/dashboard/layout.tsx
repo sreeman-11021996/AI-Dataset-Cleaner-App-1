@@ -20,6 +20,7 @@ import {
   Bell,
   Database,
   Zap,
+  Code,
 } from 'lucide-react';
 import { useState } from 'react';
 import styles from './layout.module.css';
@@ -28,6 +29,7 @@ const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/dashboard/upload', label: 'Upload Dataset', icon: Upload },
   { href: '/dashboard/history', label: 'Dataset History', icon: History },
+  { href: '/dashboard/api-docs', label: 'API Docs', icon: Code, teamOnly: true },
   { href: '/dashboard/settings', label: 'Account Settings', icon: Settings },
 ];
 
@@ -79,7 +81,7 @@ export default function DashboardLayout({
         </div>
 
         <nav className={styles.sidebarNav}>
-          {navItems.map((item) => {
+          {navItems.filter(item => !item.teamOnly || isTeam).map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (

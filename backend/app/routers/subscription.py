@@ -376,3 +376,66 @@ async def get_plans():
             "features": PLAN_LIMITS["team"]
         }
     }
+
+
+import secrets
+
+
+@router.post("/api-key/generate")
+async def generate_api_key(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Generate a new API key"""
+    if current_user.subscription_tier != SubscriptionTier.team:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="API access is only available for Team plan"
+        )
+    
+    api_key = secrets.token_hex(32)
+    current_user.api_key = api_key
+    current_user.api_key_created_at = datetime.utcnow()
+    db.commit()
+    
+    return {
+        "api_key": api_key,
+        "message": "Save this API key. It will not be shown again."
+    }
+
+
+@router.post("/api-key/revoke")
+async def revoke_api_key(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Revoke the current API key"""
+    if current_user.subscription_tier != SubscriptionTier.team:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="API access is only available for Team plan"
+        )
+    
+    current_user.api_key = None
+    current_user.api_key_created_at = None
+    db.commit()
+    
+    return {"message": "API key revoked successfully"}
+
+
+@router.get("/api-key/status")
+async def get_api_key_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get API key status"""
+    if current_user.subscription_tier != SubscriptionTier.team:
+        return {
+            "has_api_key": False,
+            "message": "API access is only available for Team plan"
+        }
+    
+    return {
+        "has_api_key": bool(current_user.api_key),
+        "created_at": current_user.api_key_created_at.isoformat() if current_user.api_key_created_at else None
+    }
