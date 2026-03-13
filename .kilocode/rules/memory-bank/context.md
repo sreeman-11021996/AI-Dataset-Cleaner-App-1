@@ -94,6 +94,7 @@ Application is built and verified. To run the full application:
 14. Account Settings (Profile, Security, Notifications, Billing, Data)
 16. Password Reset (forgot-password, reset-password pages)
 17. Subscription Plans (Free, Pro, Team) with feature restrictions
+18. Razorpay payment gateway integration for subscriptions
 
 ## Session History
 
