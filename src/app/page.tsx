@@ -169,16 +169,16 @@ export default function Home() {
               <div className={styles.pricingHeader}>
                 <h3>Free</h3>
                 <div className={styles.price}>
-                  <span className={styles.priceAmount}>$0</span>
+                  <span className={styles.priceAmount}>₹0</span>
                   <span className={styles.pricePeriod}>/month</span>
                 </div>
               </div>
               <ul className={styles.pricingFeatures}>
                 <li><Check size={16} /> 5MB max dataset size</li>
-                <li><Check size={16} /> 100MB storage</li>
-                <li><Check size={16} /> 10 cleaning operations/month</li>
+                <li><Check size={16} /> 10 datasets</li>
+                <li><Check size={16} /> 10 daily operations</li>
                 <li><Check size={16} /> Basic cleaning features</li>
-                <li><Check size={16} /> CSV export</li>
+                <li><Check size={16} /> Data quality scores</li>
               </ul>
               <Link href="/register" className={styles.pricingButton}>Get Started</Link>
             </div>
@@ -187,20 +187,39 @@ export default function Home() {
               <div className={styles.pricingHeader}>
                 <h3>Pro</h3>
                 <div className={styles.price}>
-                  <span className={styles.priceAmount}>$19</span>
+                  <span className={styles.priceAmount}>₹999</span>
                   <span className={styles.pricePeriod}>/month</span>
                 </div>
               </div>
               <ul className={styles.pricingFeatures}>
                 <li><Check size={16} /> 100MB max dataset size</li>
-                <li><Check size={16} /> 5GB storage</li>
-                <li><Check size={16} /> Unlimited operations</li>
+                <li><Check size={16} /> 100 datasets</li>
+                <li><Check size={16} /> 100 daily operations</li>
                 <li><Check size={16} /> Advanced cleaning features</li>
+                <li><Check size={16} /> Quality reports</li>
                 <li><Check size={16} /> Outlier detection</li>
-                <li><Check size={16} /> Categorical encoding</li>
                 <li><Check size={16} /> Priority support</li>
               </ul>
               <Link href="/register?plan=pro" className={styles.pricingButtonPro}>Upgrade to Pro</Link>
+            </div>
+            <div className={styles.pricingCard}>
+              <div className={styles.pricingHeader}>
+                <h3>Team</h3>
+                <div className={styles.price}>
+                  <span className={styles.priceAmount}>₹3,999</span>
+                  <span className={styles.pricePeriod}>/month</span>
+                </div>
+              </div>
+              <ul className={styles.pricingFeatures}>
+                <li><Check size={16} /> 500MB max dataset size</li>
+                <li><Check size={16} /> Unlimited datasets</li>
+                <li><Check size={16} /> Unlimited operations</li>
+                <li><Check size={16} /> Everything in Pro</li>
+                <li><Check size={16} /> Team workspace</li>
+                <li><Check size={16} /> API access</li>
+                <li><Check size={16} /> Dedicated support</li>
+              </ul>
+              <Link href="/register?plan=team" className={styles.pricingButton}>Contact Sales</Link>
             </div>
           </div>
         </section>
