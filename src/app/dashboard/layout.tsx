@@ -97,15 +97,17 @@ export default function DashboardLayout({
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <Link href="/pricing" className={styles.upgradeBanner}>
-            <Sparkles size={18} />
-            {sidebarOpen && (
-              <>
-                <span>Upgrade to Pro</span>
-                <span className={styles.badge}>NEW</span>
-              </>
-            )}
-          </Link>
+          {!isPro && (
+            <Link href="/pricing" className={styles.upgradeBanner}>
+              <Sparkles size={18} />
+              {sidebarOpen && (
+                <>
+                  <span>Upgrade to Pro</span>
+                  <span className={styles.badge}>SAVE</span>
+                </>
+              )}
+            </Link>
+          )}
           
           <div className={styles.userSection}>
             <div className={styles.userInfo}>

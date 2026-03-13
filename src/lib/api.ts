@@ -126,6 +126,9 @@ export interface User {
   };
   team_id?: string;
   team_role?: string;
+  subscription_status?: string;
+  subscription_start_date?: string;
+  subscription_end_date?: string;
   created_at: string;
 }
 
@@ -194,4 +197,37 @@ export interface Token {
   access_token: string;
   refresh_token: string;
   token_type: string;
+}
+
+export interface SubscriptionResponse {
+  tier: string;
+  status: string | null;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+}
+
+export interface CreateSubscriptionResponse {
+  subscription_id: string;
+  customer_id: string;
+  order_id: string;
+  amount: number;
+  currency: string;
+}
+
+export interface PlanInfo {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  interval: string;
+  features: {
+    max_file_size_mb: number;
+    max_datasets: number;
+    max_daily_operations: number;
+    advanced_cleaning: boolean;
+    quality_reports: boolean;
+    api_access: boolean;
+    team_workspace: boolean;
+  };
 }

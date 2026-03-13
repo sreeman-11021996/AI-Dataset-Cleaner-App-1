@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, datasets, analysis, cleaning
+from app.routers import auth, datasets, analysis, cleaning, subscription
 from app.core.database import engine
 from app.models import base
 
@@ -24,6 +24,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(datasets.router, prefix="/api/datasets", tags=["Datasets"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
 app.include_router(cleaning.router, prefix="/api/cleaning", tags=["Cleaning"])
+app.include_router(subscription.router, prefix="/api/subscription", tags=["Subscription"])
 
 
 @app.get("/")

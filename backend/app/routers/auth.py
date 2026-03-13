@@ -38,6 +38,9 @@ def get_user_with_limits(user: User) -> dict:
         "plan_limits": PlanLimits(**limits),
         "team_id": user.team_id,
         "team_role": user.team_role,
+        "subscription_status": user.subscription_status,
+        "subscription_start_date": user.subscription_start_date,
+        "subscription_end_date": user.subscription_end_date,
         "created_at": user.created_at,
     }
 

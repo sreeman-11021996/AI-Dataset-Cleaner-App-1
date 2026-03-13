@@ -68,6 +68,9 @@ class UserResponse(UserBase):
     plan_limits: PlanLimits
     team_id: Optional[UUID] = None
     team_role: Optional[str] = None
+    subscription_status: Optional[str] = None
+    subscription_start_date: Optional[datetime] = None
+    subscription_end_date: Optional[datetime] = None
     created_at: datetime
 
     class Config:
@@ -82,3 +85,28 @@ class Token(BaseModel):
 
 class TokenRefresh(BaseModel):
     refresh_token: str
+
+
+class SubscriptionResponse(BaseModel):
+    tier: str
+    status: Optional[str] = None
+    current_period_start: Optional[datetime] = None
+    current_period_end: Optional[datetime] = None
+    cancel_at_period_end: bool = False
+
+
+class CreateSubscriptionRequest(BaseModel):
+    plan_id: str  # pro or team
+
+
+class CreateSubscriptionResponse(BaseModel):
+    subscription_id: str
+    customer_id: str
+    order_id: str
+    amount: int
+    currency: str = "INR"
+
+
+class RazorpayWebhook(BaseModel):
+    event: str
+    payload: Dict[str, Any]

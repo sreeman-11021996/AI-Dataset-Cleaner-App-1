@@ -88,6 +88,13 @@ class User(Base):
     
     # Daily usage tracking
     daily_operations_reset = Column(DateTime, nullable=True)
+    
+    # Razorpay subscription fields
+    razorpay_customer_id = Column(String(255), nullable=True)
+    razorpay_subscription_id = Column(String(255), nullable=True)
+    subscription_status = Column(String(50), nullable=True)  # active, cancelled, past_due
+    subscription_start_date = Column(DateTime, nullable=True)
+    subscription_end_date = Column(DateTime, nullable=True)
 
     datasets = relationship("Dataset", back_populates="user")
     team = relationship("Team", back_populates="members")

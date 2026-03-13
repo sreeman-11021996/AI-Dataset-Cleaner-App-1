@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { api, SubscriptionResponse } from '@/lib/api';
+import { useSearchParams } from 'next/navigation';
 import {
   User,
   Mail,
@@ -18,15 +20,76 @@ import {
   AlertCircle,
   ExternalLink,
   Save,
+  Loader2,
+  Zap,
+  Calendar,
+  Database,
 } from 'lucide-react';
+import Link from 'next/link';
 import styles from './settings.module.css';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('profile');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionResponse | null>(null);
+  const [loadingSub, setLoadingSub] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (activeTab === 'billing' && user?.subscription_tier !== 'free') {
+      loadSubscription();
+    }
+  }, [activeTab, user]);
+
+  const loadSubscription = async () => {
+    setLoadingSub(true);
+    try {
+      const data = await api.get<SubscriptionResponse>('/api/subscription/status');
+      setSubscription(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingSub(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your subscription? You will lose access at the end of the billing period.')) {
+      return;
+    }
+    
+    setCancelling(true);
+    try {
+      await api.post('/api/subscription/cancel');
+      await refreshUser();
+      await loadSubscription();
+      alert('Subscription cancelled. You will have access until the end of the billing period.');
+    } catch (error: any) {
+      alert(error.message || 'Failed to cancel subscription');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return 'N/A';
+    return new Date(dateStr).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
 
   const [profile, setProfile] = useState({
     name: user?.name || '',
@@ -287,29 +350,90 @@ export default function SettingsPage() {
               <div className={styles.currentPlan}>
                 <div className={styles.planInfo}>
                   <span className={styles.planLabel}>Current Plan</span>
-                  <span className={`${styles.planName} ${user?.subscription_tier === 'pro' ? styles.pro : ''}`}>
-                    {user?.subscription_tier === 'pro' ? 'Pro Plan' : 'Free Plan'}
+                  <span className={`${styles.planName} ${user?.subscription_tier === 'pro' || user?.subscription_tier === 'team' ? styles.pro : ''}`}>
+                    {user?.subscription_tier === 'team' ? 'Team Plan' : user?.subscription_tier === 'pro' ? 'Pro Plan' : 'Free Plan'}
                   </span>
+                  {subscription?.status && (
+                    <span className={`${styles.planStatus} ${subscription.status === 'active' ? styles.statusActive : styles.statusCancelled}`}>
+                      {subscription.status === 'active' ? 'Active' : subscription.status === 'cancelled' ? 'Cancelling' : subscription.status}
+                    </span>
+                  )}
                 </div>
                 {user?.subscription_tier === 'free' && (
-                  <a href="/pricing" className="btn btn-primary">Upgrade Plan</a>
+                  <Link href="/pricing" className="btn btn-primary">Upgrade Plan</Link>
                 )}
               </div>
 
-              {user?.subscription_tier === 'pro' && (
+              {(user?.subscription_tier === 'pro' || user?.subscription_tier === 'team') && (
                 <div className={styles.planDetails}>
-                  <div className={styles.planDetail}>
-                    <span>Storage</span>
-                    <span>5 GB</span>
-                  </div>
-                  <div className={styles.planDetail}>
-                    <span>File Size Limit</span>
-                    <span>100 MB</span>
-                  </div>
-                  <div className={styles.planDetail}>
-                    <span>Priority Support</span>
-                    <span>Included</span>
-                  </div>
+                  {loadingSub ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '1rem' }}>
+                      <Loader2 size={16} className="animate-spin" />
+                      Loading subscription details...
+                    </div>
+                  ) : subscription && (
+                    <>
+                      <div className={styles.planDetail}>
+                        <span><Calendar size={14} /> Current Period Start</span>
+                        <span>{formatDate(subscription.current_period_start)}</span>
+                      </div>
+                      <div className={styles.planDetail}>
+                        <span><Calendar size={14} /> Current Period End</span>
+                        <span>{formatDate(subscription.current_period_end)}</span>
+                      </div>
+                      <div className={styles.planDetail}>
+                        <span><Zap size={14} /> Daily Operations</span>
+                        <span>{user?.plan_limits?.max_daily_operations === -1 ? 'Unlimited' : user?.plan_limits?.max_daily_operations}</span>
+                      </div>
+                      <div className={styles.planDetail}>
+                        <span><Database size={14} /> Storage Limit</span>
+                        <span>{user?.plan_limits?.max_file_size_mb === -1 ? 'Unlimited' : `${user?.plan_limits?.max_file_size_mb} MB`}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {user?.subscription_tier === 'pro' && subscription?.status !== 'cancelled' && (
+                <div style={{ marginTop: '1.5rem' }}>
+                  <button
+                    onClick={handleCancelSubscription}
+                    disabled={cancelling}
+                    style={{
+                      padding: '0.625rem 1.25rem',
+                      background: 'transparent',
+                      color: 'var(--accent-error)',
+                      border: '1px solid var(--accent-error)',
+                      borderRadius: '8px',
+                      fontSize: '0.9375rem',
+                      fontWeight: 500,
+                      cursor: cancelling ? 'not-allowed' : 'pointer',
+                      opacity: cancelling ? 0.7 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    {cancelling && <Loader2 size={16} className="animate-spin" />}
+                    Cancel Subscription
+                  </button>
+                </div>
+              )}
+
+              {subscription?.status === 'cancelled' && (
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1rem',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid var(--accent-error)',
+                  borderRadius: '8px',
+                  color: 'var(--accent-error)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                }}>
+                  <AlertCircle size={18} />
+                  <span>Your subscription will end on {formatDate(subscription.current_period_end)}</span>
                 </div>
               )}
 
@@ -322,8 +446,15 @@ export default function SettingsPage() {
               <div className={styles.paymentCard}>
                 <CreditCard size={24} />
                 <div>
-                  <span className={styles.paymentTitle}>No payment method</span>
-                  <span className={styles.paymentHint}>Add a card to upgrade to Pro</span>
+                  <span className={styles.paymentTitle}>
+                    {user?.subscription_tier === 'free' ? 'No payment method' : 'Razorpay'}
+                  </span>
+                  <span className={styles.paymentHint}>
+                    {user?.subscription_tier === 'free' 
+                      ? 'Add a card to upgrade to Pro' 
+                      : 'Your subscription is managed through Razorpay'
+                    }
+                  </span>
                 </div>
               </div>
             </div>

@@ -3,18 +3,25 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { api, CreateSubscriptionResponse } from '@/lib/api';
 import Link from 'next/link';
 import { 
-  Sparkles, Check, X, ArrowRight, Database, 
-  Zap, BarChart3, Users, Shield, FileText, 
-  HardDrive, Gauge, Lock
+  Sparkles, Check, X, Database, 
+  Zap, Loader2
 } from 'lucide-react';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 const plans = [
   {
     id: 'free',
     name: 'Free',
-    price: '$0',
+    price: 0,
+    priceDisplay: '₹0',
     period: 'forever',
     description: 'Perfect for getting started with data cleaning',
     features: [
@@ -34,7 +41,8 @@ const plans = [
   {
     id: 'pro',
     name: 'Pro',
-    price: '$29',
+    price: 999,
+    priceDisplay: '₹999',
     period: 'per month',
     description: 'For professionals who need more power',
     features: [
@@ -54,7 +62,8 @@ const plans = [
   {
     id: 'team',
     name: 'Team',
-    price: '$99',
+    price: 3999,
+    priceDisplay: '₹3,999',
     period: 'per month',
     description: 'Collaborate with your team on data cleaning',
     features: [
@@ -75,8 +84,16 @@ const plans = [
 
 export default function PricingPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState<string | null>(null);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => setRazorpayLoaded(true);
+    document.head.appendChild(script);
+  }, []);
 
   const handleSelectPlan = async (planId: string) => {
     if (!user) {
@@ -85,16 +102,60 @@ export default function PricingPage() {
     }
 
     if (planId === 'free') {
+      router.push('/dashboard');
+      return;
+    }
+
+    if (user.subscription_tier === 'pro' || user.subscription_tier === 'team') {
+      router.push('/dashboard/settings?tab=billing');
       return;
     }
 
     setLoading(planId);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(`This would integrate with a payment provider (Stripe) for the ${planId} plan.`);
-    } catch (error) {
+      const subData = await api.post<CreateSubscriptionResponse>('/api/subscription/create-subscription', {
+        plan_id: planId
+      });
+
+      if (window.Razorpay) {
+        const plan = plans.find(p => p.id === planId);
+        
+        const rzOptions = {
+          key: 'rzp_test_placeholder', // Replace with actual key in production
+          amount: subData.amount,
+          currency: subData.currency,
+          name: 'DatasetCleaner AI',
+          description: `${plan?.name} Subscription`,
+          order_id: subData.order_id,
+          handler: async (response: any) => {
+            try {
+              await api.post('/api/subscription/verify-payment', {
+                subscription_id: subData.subscription_id,
+                payment_id: response.razorpay_payment_id
+              });
+              await refreshUser();
+              alert('Subscription activated successfully!');
+              router.push('/dashboard');
+            } catch (error) {
+              alert('Payment verification failed. Please contact support.');
+            }
+          },
+          prefill: {
+            name: user.name || '',
+            email: user.email,
+          },
+          theme: {
+            color: '#00d4aa',
+          },
+        };
+
+        const rzp = new window.Razorpay(rzOptions);
+        rzp.open();
+      }
+    } catch (error: any) {
       console.error(error);
+      alert(error.message || 'Failed to create subscription');
     } finally {
       setLoading(null);
     }
@@ -204,104 +265,114 @@ export default function PricingPage() {
           gap: '2rem',
           marginBottom: '4rem',
         }}>
-          {plans.map((plan) => (
-            <div key={plan.id} style={{
-              background: plan.popular ? 'var(--bg-card)' : 'var(--bg-secondary)',
-              border: plan.popular ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
-              borderRadius: '16px',
-              padding: '2rem',
-              position: 'relative',
-            }}>
-              {plan.popular && (
-                <div style={{
-                  position: 'absolute',
-                  top: '-12px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  background: 'var(--accent-primary)',
-                  color: '#000',
-                  padding: '0.25rem 1rem',
-                  borderRadius: '9999px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                }}>
-                  MOST POPULAR
+          {plans.map((plan) => {
+            const isCurrentPlan = user?.subscription_tier === plan.id;
+            const isUpgrade = plan.id !== 'free' && user?.subscription_tier === 'free';
+            
+            return (
+              <div key={plan.id} style={{
+                background: plan.popular ? 'var(--bg-card)' : 'var(--bg-secondary)',
+                border: plan.popular ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                borderRadius: '16px',
+                padding: '2rem',
+                position: 'relative',
+              }}>
+                {plan.popular && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-12px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: 'var(--accent-primary)',
+                    color: '#000',
+                    padding: '0.25rem 1rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}>
+                    MOST POPULAR
+                  </div>
+                )}
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                    {plan.name}
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
+                    {plan.description}
+                  </p>
                 </div>
-              )}
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                  {plan.name}
-                </h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
-                  {plan.description}
-                </p>
-              </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <span style={{ fontSize: '3rem', fontWeight: 700 }}>{plan.priceDisplay}</span>
+                  <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>{plan.period}</span>
+                </div>
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '3rem', fontWeight: 700 }}>{plan.price}</span>
-                <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>{plan.period}</span>
-              </div>
+                <ul style={{ listStyle: 'none', padding: 0, marginBottom: '2rem' }}>
+                  {plan.features.map((feature, idx) => (
+                    <li key={idx} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.625rem 0',
+                      borderBottom: idx < plan.features.length - 1 ? '1px solid var(--border-color)' : 'none',
+                    }}>
+                      {feature.included !== undefined && (
+                        feature.included ? 
+                          <Check size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} /> :
+                          <X size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                      )}
+                      {feature.value && (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.375rem',
+                          color: feature.value === 'Unlimited' ? 'var(--accent-primary)' : 'var(--text-primary)',
+                          fontWeight: feature.value === 'Unlimited' ? 500 : 400,
+                        }}>
+                          {feature.value === 'Unlimited' && <Zap size={14} />}
+                          {feature.value}
+                        </span>
+                      )}
+                      <span style={{ color: feature.included === false ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
+                        {feature.name}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
 
-              <ul style={{ listStyle: 'none', padding: 0, marginBottom: '2rem' }}>
-                {plan.features.map((feature, idx) => (
-                  <li key={idx} style={{
+                <button
+                  onClick={() => handleSelectPlan(plan.id)}
+                  disabled={loading !== null || isCurrentPlan || !razorpayLoaded}
+                  style={{
+                    width: '100%',
+                    padding: '0.875rem',
+                    background: plan.popular ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                    color: plan.popular ? '#000' : 'var(--text-primary)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    cursor: isCurrentPlan ? 'default' : 'pointer',
+                    opacity: isCurrentPlan ? 0.7 : 1,
+                    transition: 'all 0.2s',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.625rem 0',
-                    borderBottom: idx < plan.features.length - 1 ? '1px solid var(--border-color)' : 'none',
-                  }}>
-                    {feature.included !== undefined && (
-                      feature.included ? 
-                        <Check size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} /> :
-                        <X size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                    )}
-                    {feature.value && (
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.375rem',
-                        color: feature.value === 'Unlimited' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                        fontWeight: feature.value === 'Unlimited' ? 500 : 400,
-                      }}>
-                        {feature.value === 'Unlimited' && <Zap size={14} />}
-                        {feature.value}
-                      </span>
-                    )}
-                    <span style={{ color: feature.included === false ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
-                      {feature.name}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={() => handleSelectPlan(plan.id)}
-                disabled={loading !== null || (user?.subscription_tier === plan.id)}
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  background: plan.popular ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
-                  color: plan.popular ? '#000' : 'var(--text-primary)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  cursor: user?.subscription_tier === plan.id ? 'default' : 'pointer',
-                  opacity: user?.subscription_tier === plan.id ? 0.7 : 1,
-                  transition: 'all 0.2s',
-                }}
-              >
-                {user?.subscription_tier === plan.id 
-                  ? 'Current Plan' 
-                  : loading === plan.id 
-                    ? 'Processing...' 
-                    : plan.cta
-                }
-              </button>
-            </div>
-          ))}
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  {loading === plan.id && <Loader2 size={18} className="animate-spin" />}
+                  {isCurrentPlan 
+                    ? 'Current Plan' 
+                    : loading === plan.id 
+                      ? 'Processing...' 
+                      : plan.cta
+                  }
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         <div style={{

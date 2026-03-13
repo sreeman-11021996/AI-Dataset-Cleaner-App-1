@@ -335,6 +335,24 @@
   color: var(--accent-secondary);
 }
 
+.planStatus {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.statusActive {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent-primary);
+}
+
+.statusCancelled {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-error);
+}
+
 .planDetails {
   display: flex;
   flex-direction: column;
