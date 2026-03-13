@@ -99,4 +99,4 @@ Application is built and verified. To run the full application:
 | Date | Changes |
 |------|---------|
 | Initial | Created DatasetCleaner AI SaaS application |
-| Latest | Added AI cleaning recommendations; Added Auto Clean Pipeline with progress bar and status updates; Added password reset UI pages (forgot-password, reset-password)
+| Latest | Added AI cleaning recommendations; Added Auto Clean Pipeline with progress bar and status updates; Added password reset UI pages; Added Google OAuth frontend integration (requires credentials)
