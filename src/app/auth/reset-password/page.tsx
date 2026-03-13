@@ -79,7 +79,7 @@ function ResetPasswordForm() {
           </p>
 
           <p className={styles.switchLink}>
-            <Link href="/forgot-password">Request a new one</Link>
+            <Link href="/auth/forgot-password">Request a new one</Link>
           </p>
         </div>
       </div>
