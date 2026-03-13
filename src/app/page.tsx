@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { 
   Sparkles, Upload, BarChart3, Zap, Shield, 
   Download, Users, Check, ArrowRight, Database,
-  Wand2, PieChart, Cpu
+  Wand2, PieChart, Cpu, Link2, Key, FileSpreadsheet
 } from 'lucide-react';
 import styles from './page.module.css';
 
@@ -31,6 +31,12 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
+      <div className={styles.background}>
+        <div className={styles.bgGradient1} />
+        <div className={styles.bgGradient2} />
+        <div className={styles.bgPattern} />
+      </div>
+      
       <header className={styles.header}>
         <div className={styles.logo}>
           <Database className={styles.logoIcon} />
@@ -93,7 +99,14 @@ export default function Home() {
                 <Upload size={24} />
               </div>
               <h3>Easy Upload</h3>
-              <p>Drag and drop your CSV files. We handle files up to 100MB with Pro plan.</p>
+              <p>Drag and drop CSV, Excel, or JSON files. Upload directly or import from Kaggle.</p>
+            </div>
+            <div className={styles.featureCard}>
+              <div className={styles.featureIcon}>
+                <Link2 size={24} />
+              </div>
+              <h3>Kaggle Import</h3>
+              <p>Import datasets directly from Kaggle with one click. No download needed.</p>
             </div>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>
@@ -106,8 +119,8 @@ export default function Home() {
               <div className={styles.featureIcon}>
                 <Wand2 size={24} />
               </div>
-              <h3>Smart Suggestions</h3>
-              <p>Get AI-powered recommendations for cleaning your specific dataset.</p>
+              <h3>AI Suggestions</h3>
+              <p>Get intelligent recommendations tailored to your specific dataset issues.</p>
             </div>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>
@@ -130,6 +143,13 @@ export default function Home() {
               <h3>Export Cleaned Data</h3>
               <p>Download your cleaned dataset in CSV format, ready for ML training.</p>
             </div>
+            <div className={styles.featureCard}>
+              <div className={styles.featureIcon}>
+                <Key size={24} />
+              </div>
+              <h3>Developer API</h3>
+              <p>Access dataset cleaning programmatically with our REST API. Build automation.</p>
+            </div>
           </div>
         </section>
 
@@ -139,7 +159,7 @@ export default function Home() {
             <div className={styles.step}>
               <div className={styles.stepNumber}>1</div>
               <h3>Upload Dataset</h3>
-              <p>Drag and drop your CSV file or click to browse. We accept files up to 5MB (Free) or 100MB (Pro).</p>
+              <p>Drag and drop your file or import directly from Kaggle. We accept CSV, Excel, and JSON.</p>
             </div>
             <div className={styles.stepConnector} />
             <div className={styles.step}>
@@ -151,7 +171,7 @@ export default function Home() {
             <div className={styles.step}>
               <div className={styles.stepNumber}>3</div>
               <h3>Apply Cleaning</h3>
-              <p>Review suggested fixes and apply them with one click. Customize any operation as needed.</p>
+              <p>Review AI suggestions and apply them with one click. Customize any operation as needed.</p>
             </div>
             <div className={styles.stepConnector} />
             <div className={styles.step}>
@@ -164,6 +184,7 @@ export default function Home() {
 
         <section id="pricing" className={styles.pricing}>
           <h2 className={styles.sectionTitle}>Simple, Transparent Pricing</h2>
+          <p className={styles.pricingSubtitle}>Start free, upgrade when you need more power</p>
           <div className={styles.pricingGrid}>
             <div className={styles.pricingCard}>
               <div className={styles.pricingHeader}>
@@ -172,12 +193,13 @@ export default function Home() {
                   <span className={styles.priceAmount}>₹0</span>
                   <span className={styles.pricePeriod}>/month</span>
                 </div>
+                <p className={styles.pricingDesc}>Perfect for getting started</p>
               </div>
               <ul className={styles.pricingFeatures}>
-                <li><Check size={16} /> 5MB max dataset size</li>
+                <li><Check size={16} /> 5MB max file size</li>
                 <li><Check size={16} /> 10 datasets</li>
                 <li><Check size={16} /> 10 daily operations</li>
-                <li><Check size={16} /> Basic cleaning features</li>
+                <li><Check size={16} /> Basic cleaning</li>
                 <li><Check size={16} /> Data quality scores</li>
               </ul>
               <Link href="/register" className={styles.pricingButton}>Get Started</Link>
@@ -190,12 +212,13 @@ export default function Home() {
                   <span className={styles.priceAmount}>₹999</span>
                   <span className={styles.pricePeriod}>/month</span>
                 </div>
+                <p className={styles.pricingDesc}>For professionals</p>
               </div>
               <ul className={styles.pricingFeatures}>
-                <li><Check size={16} /> 100MB max dataset size</li>
+                <li><Check size={16} /> 100MB max file size</li>
                 <li><Check size={16} /> 100 datasets</li>
                 <li><Check size={16} /> 100 daily operations</li>
-                <li><Check size={16} /> Advanced cleaning features</li>
+                <li><Check size={16} /> Advanced cleaning</li>
                 <li><Check size={16} /> Quality reports</li>
                 <li><Check size={16} /> Outlier detection</li>
                 <li><Check size={16} /> Priority support</li>
@@ -209,14 +232,15 @@ export default function Home() {
                   <span className={styles.priceAmount}>₹3,999</span>
                   <span className={styles.pricePeriod}>/month</span>
                 </div>
+                <p className={styles.pricingDesc}>For teams & developers</p>
               </div>
               <ul className={styles.pricingFeatures}>
-                <li><Check size={16} /> 500MB max dataset size</li>
+                <li><Check size={16} /> 500MB max file size</li>
                 <li><Check size={16} /> Unlimited datasets</li>
                 <li><Check size={16} /> Unlimited operations</li>
                 <li><Check size={16} /> Everything in Pro</li>
                 <li><Check size={16} /> Team workspace</li>
-                <li><Check size={16} /> API access</li>
+                <li><Check size={16} /> Developer API</li>
                 <li><Check size={16} /> Dedicated support</li>
               </ul>
               <Link href="/register?plan=team" className={styles.pricingButton}>Contact Sales</Link>
