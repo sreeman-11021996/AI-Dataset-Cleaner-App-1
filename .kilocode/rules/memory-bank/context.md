@@ -92,7 +92,8 @@ Application is built and verified. To run the full application:
 12. Dashboard Overview with Charts
 13. Dataset History with Search/Filter
 14. Account Settings (Profile, Security, Notifications, Billing, Data)
-15. Password Reset (forgot-password, reset-password pages)
+16. Password Reset (forgot-password, reset-password pages)
+17. Subscription Plans (Free, Pro, Team) with feature restrictions
 
 ## Session History
 
