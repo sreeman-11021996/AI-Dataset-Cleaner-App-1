@@ -7,17 +7,45 @@ import { api, Dataset, DatasetPreview, Analysis, CleaningSuggestion } from '@/li
 import { 
   Database, ArrowLeft, FileSpreadsheet, BarChart3, 
   Wand2, Download, Check, X, ChevronDown, RefreshCw,
-  AlertTriangle, AlertCircle, CheckCircle, Info
+  AlertTriangle, AlertCircle, CheckCircle, Info,
+  TrendingUp, TrendingDown, Minus, PieChart, Activity,
+  Layers, AlertOctagon, GitCompare
 } from 'lucide-react';
+import {
+  PieChart as RechartsPie,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+} from 'recharts';
 import styles from './dataset.module.css';
 
 type Tab = 'preview' | 'analysis' | 'clean' | 'export';
+
+const SCORES_COLORS = {
+  excellent: '#00d4aa',
+  good: '#7c3aed',
+  fair: '#f59e0b',
+  poor: '#ef4444',
+};
+
+const ISSUE_COLORS = ['#00d4aa', '#7c3aed', '#f59e0b', '#ef4444', '#3b82f6'];
 
 export default function DatasetPage() {
   const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>('preview');
+  const [activeTab, setActiveTab] = useState<Tab>('analysis');
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [preview, setPreview] = useState<DatasetPreview | null>(null);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
@@ -116,6 +144,26 @@ export default function DatasetPage() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return SCORES_COLORS.excellent;
+    if (score >= 70) return SCORES_COLORS.good;
+    if (score >= 50) return SCORES_COLORS.fair;
+    return SCORES_COLORS.poor;
+  };
+
+  const getScoreLabel = (score: number) => {
+    if (score >= 90) return 'Excellent';
+    if (score >= 70) return 'Good';
+    if (score >= 50) return 'Fair';
+    return 'Poor';
+  };
+
+  const getScoreIcon = (score: number) => {
+    if (score >= 90) return <TrendingUp size={18} />;
+    if (score >= 50) return <Minus size={18} />;
+    return <TrendingDown size={18} />;
+  };
+
   if (loading || !dataset) {
     return (
       <div className={styles.loading}>
@@ -123,6 +171,24 @@ export default function DatasetPage() {
       </div>
     );
   }
+
+  const qualityScoreData = analysis ? [
+    { name: 'Completeness', value: analysis.completeness_score, fullMark: 100 },
+    { name: 'Consistency', value: analysis.consistency_score, fullMark: 100 },
+    { name: 'Balance', value: analysis.imbalance_score, fullMark: 100 },
+  ] : [];
+
+  const issueDistributionData = analysis ? [
+    { name: 'Missing', value: Object.values(analysis.missing_values).reduce((a, b) => a + b, 0), color: '#f59e0b' },
+    { name: 'Duplicates', value: analysis.duplicate_rows, color: '#ef4444' },
+    { name: 'Outliers', value: Object.values(analysis.outliers).reduce((a, b) => a + b, 0), color: '#7c3aed' },
+    { name: 'Inconsistent', value: Object.values(analysis.inconsistent_categories).reduce((a, b) => a + b.length, 0), color: '#3b82f6' },
+  ].filter(d => d.value > 0) : [];
+
+  const missingColumnsData = analysis ? Object.entries(analysis.missing_values_percent)
+    .filter(([_, val]) => val > 0)
+    .map(([name, value]) => ({ name, value: Math.round(value) }))
+    .slice(0, 8) : [];
 
   return (
     <div className={styles.container}>
@@ -147,18 +213,18 @@ export default function DatasetPage() {
 
       <nav className={styles.tabs}>
         <button 
+          className={`${styles.tab} ${activeTab === 'analysis' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('analysis')}
+        >
+          <BarChart3 size={18} />
+          Quality Report
+        </button>
+        <button 
           className={`${styles.tab} ${activeTab === 'preview' ? styles.tabActive : ''}`}
           onClick={() => setActiveTab('preview')}
         >
           <FileSpreadsheet size={18} />
           Preview
-        </button>
-        <button 
-          className={`${styles.tab} ${activeTab === 'analysis' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('analysis')}
-        >
-          <BarChart3 size={18} />
-          Analysis
         </button>
         <button 
           className={`${styles.tab} ${activeTab === 'clean' ? styles.tabActive : ''}`}
@@ -177,6 +243,246 @@ export default function DatasetPage() {
       </nav>
 
       <main className={styles.content}>
+        {activeTab === 'analysis' && analysis && (
+          <div className={styles.analysisTab}>
+            <div className={styles.reportHeader}>
+              <div className={styles.overallScore}>
+                <div className={styles.scoreRing} style={{ '--score-color': getScoreColor(analysis.quality_score) } as React.CSSProperties}>
+                  <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" className={styles.scoreBg} />
+                    <circle 
+                      cx="50" cy="50" r="45" 
+                      className={styles.scoreProgress}
+                      style={{ 
+                        strokeDasharray: `${(analysis.quality_score / 100) * 283} 283`,
+                        stroke: getScoreColor(analysis.quality_score)
+                      }}
+                    />
+                  </svg>
+                  <div className={styles.scoreValue}>
+                    <span className={styles.scoreNumber}>{analysis.quality_score}</span>
+                    <span className={styles.scoreLabel}>out of 100</span>
+                  </div>
+                </div>
+                <div className={styles.scoreInfo}>
+                  <h2>Data Quality Score</h2>
+                  <span className={styles.scoreRating} style={{ color: getScoreColor(analysis.quality_score) }}>
+                    {getScoreIcon(analysis.quality_score)}
+                    {getScoreLabel(analysis.quality_score)}
+                  </span>
+                  <p>Based on completeness, consistency, and balance metrics</p>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.scoresGrid}>
+              <div className={styles.scoreCard}>
+                <div className={styles.scoreCardHeader}>
+                  <Layers size={20} />
+                  <span>Completeness</span>
+                </div>
+                <div className={styles.scoreCardValue} style={{ color: getScoreColor(analysis.completeness_score) }}>
+                  {analysis.completeness_score}%
+                </div>
+                <div className={styles.scoreCardBar}>
+                  <div 
+                    className={styles.scoreCardProgress}
+                    style={{ 
+                      width: `${analysis.completeness_score}%`,
+                      background: getScoreColor(analysis.completeness_score)
+                    }}
+                  />
+                </div>
+                <p className={styles.scoreCardDesc}>
+                  {Object.values(analysis.missing_values).reduce((a, b) => a + b, 0).toLocaleString()} missing cells
+                </p>
+              </div>
+
+              <div className={styles.scoreCard}>
+                <div className={styles.scoreCardHeader}>
+                  <GitCompare size={20} />
+                  <span>Consistency</span>
+                </div>
+                <div className={styles.scoreCardValue} style={{ color: getScoreColor(analysis.consistency_score) }}>
+                  {analysis.consistency_score}%
+                </div>
+                <div className={styles.scoreCardBar}>
+                  <div 
+                    className={styles.scoreCardProgress}
+                    style={{ 
+                      width: `${analysis.consistency_score}%`,
+                      background: getScoreColor(analysis.consistency_score)
+                    }}
+                  />
+                </div>
+                <p className={styles.scoreCardDesc}>
+                  {analysis.duplicate_rows} duplicates + outliers
+                </p>
+              </div>
+
+              <div className={styles.scoreCard}>
+                <div className={styles.scoreCardHeader}>
+                  <PieChart size={20} />
+                  <span>Balance</span>
+                </div>
+                <div className={styles.scoreCardValue} style={{ color: getScoreColor(analysis.imbalance_score) }}>
+                  {analysis.imbalance_score}%
+                </div>
+                <div className={styles.scoreCardBar}>
+                  <div 
+                    className={styles.scoreCardProgress}
+                    style={{ 
+                      width: `${analysis.imbalance_score}%`,
+                      background: getScoreColor(analysis.imbalance_score)
+                    }}
+                  />
+                </div>
+                <p className={styles.scoreCardDesc}>
+                  {Object.keys(analysis.imbalanced_columns).length} imbalanced columns
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.chartsRow}>
+              <div className={styles.chartCard}>
+                <h3>
+                  <AlertCircle size={18} />
+                  Issues Distribution
+                </h3>
+                {issueDistributionData.length > 0 ? (
+                  <div className={styles.pieChartWrapper}>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <RechartsPie>
+                        <Pie
+                          data={issueDistributionData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={4}
+                          dataKey="value"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          labelLine={false}
+                        >
+                          {issueDistributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </RechartsPie>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className={styles.noIssues}>
+                    <CheckCircle size={32} />
+                    <span>No issues detected</span>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.chartCard}>
+                <h3>
+                  <Activity size={18} />
+                  Quality Radar
+                </h3>
+                <ResponsiveContainer width="100%" height={220}>
+                  <RadarChart data={qualityScoreData}>
+                    <PolarGrid stroke="var(--border-color)" />
+                    <PolarAngleAxis dataKey="name" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} />
+                    <Radar
+                      name="Score"
+                      dataKey="value"
+                      stroke="#00d4aa"
+                      fill="#00d4aa"
+                      fillOpacity={0.3}
+                    />
+                    <Tooltip />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {missingColumnsData.length > 0 && (
+              <div className={styles.chartCard}>
+                <h3>
+                  <AlertTriangle size={18} />
+                  Missing Values by Column
+                </h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={missingColumnsData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                    <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} unit="%" />
+                    <YAxis type="category" dataKey="name" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} width={100} />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            <div className={styles.issuesSummary}>
+              <h3>Detailed Issues</h3>
+              <div className={styles.issuesList}>
+                <div className={styles.issueItem}>
+                  <AlertCircle size={18} className={styles.issueIcon} style={{ color: '#f59e0b' }} />
+                  <div className={styles.issueContent}>
+                    <span className={styles.issueTitle}>Missing Values</span>
+                    <span className={styles.issueCount}>
+                      {Object.values(analysis.missing_values).reduce((a, b) => a + b, 0).toLocaleString()} cells
+                      ({Object.values(analysis.missing_values_percent).reduce((a, b) => a + b, 0) / analysis.column_count}% avg)
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles.issueItem}>
+                  <AlertTriangle size={18} className={styles.issueIcon} style={{ color: '#ef4444' }} />
+                  <div className={styles.issueContent}>
+                    <span className={styles.issueTitle}>Duplicate Rows</span>
+                    <span className={styles.issueCount}>
+                      {analysis.duplicate_rows.toLocaleString()} rows ({analysis.duplicate_percentage}%)
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles.issueItem}>
+                  <AlertOctagon size={18} className={styles.issueIcon} style={{ color: '#7c3aed' }} />
+                  <div className={styles.issueContent}>
+                    <span className={styles.issueTitle}>Outliers Detected</span>
+                    <span className={styles.issueCount}>
+                      {Object.values(analysis.outliers).reduce((a, b) => a + b, 0).toLocaleString()} values
+                    </span>
+                  </div>
+                </div>
+
+                {Object.keys(analysis.inconsistent_categories).length > 0 && (
+                  <div className={styles.issueItem}>
+                    <Info size={18} className={styles.issueIcon} style={{ color: '#3b82f6' }} />
+                    <div className={styles.issueContent}>
+                      <span className={styles.issueTitle}>Categorical Inconsistencies</span>
+                      <span className={styles.issueCount}>
+                        {Object.keys(analysis.inconsistent_categories).length} columns
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {Object.keys(analysis.imbalanced_columns).length > 0 && (
+                  <div className={styles.issueItem}>
+                    <PieChart size={18} className={styles.issueIcon} style={{ color: '#00d4aa' }} />
+                    <div className={styles.issueContent}>
+                      <span className={styles.issueTitle}>Class Imbalance</span>
+                      <span className={styles.issueCount}>
+                        {Object.keys(analysis.imbalanced_columns).length} columns with skewed distribution
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'preview' && (
           <div className={styles.previewTab}>
             <div className={styles.tableWrapper}>
@@ -202,81 +508,6 @@ export default function DatasetPage() {
             <p className={styles.previewNote}>
               Showing {preview?.rows.length} of {preview?.total_rows.toLocaleString()} rows
             </p>
-          </div>
-        )}
-
-        {activeTab === 'analysis' && analysis && (
-          <div className={styles.analysisTab}>
-            <div className={styles.qualityScore}>
-              <div className={styles.scoreCircle} style={{ 
-                '--score': analysis.quality_score,
-                '--color': analysis.quality_score > 80 ? 'var(--accent-success)' : 
-                           analysis.quality_score > 50 ? 'var(--accent-warning)' : 'var(--accent-error)'
-              } as React.CSSProperties}>
-                <span>{analysis.quality_score}</span>
-              </div>
-              <h3>Data Quality Score</h3>
-            </div>
-
-            <div className={styles.issuesGrid}>
-              <div className={styles.issueCard}>
-                <AlertCircle size={24} className={styles.issueIcon} style={{ color: 'var(--accent-warning)' }} />
-                <div>
-                  <span className={styles.issueCount}>
-                    {Object.values(analysis.missing_values).reduce((a, b) => a + b, 0)}
-                  </span>
-                  <span className={styles.issueLabel}>Missing Values</span>
-                </div>
-              </div>
-              <div className={styles.issueCard}>
-                <AlertTriangle size={24} className={styles.issueIcon} style={{ color: 'var(--accent-error)' }} />
-                <div>
-                  <span className={styles.issueCount}>{analysis.duplicate_rows}</span>
-                  <span className={styles.issueLabel}>Duplicate Rows</span>
-                </div>
-              </div>
-              <div className={styles.issueCard}>
-                <Info size={24} className={styles.issueIcon} style={{ color: 'var(--accent-secondary)' }} />
-                <div>
-                  <span className={styles.issueCount}>
-                    {Object.values(analysis.outliers).reduce((a, b) => a + b, 0)}
-                  </span>
-                  <span className={styles.issueLabel}>Outliers</span>
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.section}>
-              <h3>Column Summary</h3>
-              <div className={styles.columnStats}>
-                {dataset.columns.map((col, i) => (
-                  <div key={i} className={styles.columnStat}>
-                    <span className={styles.columnName}>{col.name}</span>
-                    <span className={styles.columnType}>{col.dtype}</span>
-                    <span className={styles.columnMissing}>
-                      {analysis.missing_values[col.name] || 0} missing
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {Object.keys(analysis.summary_stats).length > 0 && (
-              <div className={styles.section}>
-                <h3>Numeric Column Statistics</h3>
-                <div className={styles.statsTable}>
-                  {Object.entries(analysis.summary_stats).map(([col, stats]) => (
-                    <div key={col} className={styles.statsRow}>
-                      <span className={styles.statsColName}>{col}</span>
-                      <span>mean: {stats.mean?.toFixed(2) || '-'}</span>
-                      <span>std: {stats.std?.toFixed(2) || '-'}</span>
-                      <span>min: {stats.min?.toFixed(2) || '-'}</span>
-                      <span>max: {stats.max?.toFixed(2) || '-'}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
 

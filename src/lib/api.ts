@@ -145,16 +145,22 @@ export interface DatasetPreview {
 export interface Analysis {
   dataset_id: string;
   quality_score: number;
+  completeness_score: number;
+  consistency_score: number;
+  imbalance_score: number;
   row_count: number;
   column_count: number;
   missing_values: Record<string, number>;
   missing_values_percent: Record<string, number>;
   duplicate_rows: number;
+  duplicate_percentage: number;
   outliers: Record<string, number>;
+  outliers_percent: Record<string, number>;
   inconsistent_categories: Record<string, string[]>;
   imbalanced_columns: Record<string, Record<string, number>>;
   column_types: Record<string, string>;
   summary_stats: Record<string, Record<string, number | null>>;
+  categorical_stats?: Record<string, Record<string, any>>;
 }
 
 export interface CleaningSuggestion {

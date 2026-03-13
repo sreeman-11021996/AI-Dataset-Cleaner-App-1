@@ -52,19 +52,33 @@ class CleaningSuggestion(BaseModel):
     enabled: bool = True
 
 
+class QualityScores(BaseModel):
+    """Data quality scores breakdown"""
+    overall: float
+    completeness: float
+    consistency: float
+    imbalance: float
+
+
 class AnalysisResponse(BaseModel):
     dataset_id: UUID
     quality_score: float
+    completeness_score: float
+    consistency_score: float
+    imbalance_score: float
     row_count: int
     column_count: int
     missing_values: Dict[str, int]
     missing_values_percent: Dict[str, float]
     duplicate_rows: int
+    duplicate_percentage: float
     outliers: Dict[str, int]
+    outliers_percent: Dict[str, float]
     inconsistent_categories: Dict[str, List[str]]
     imbalanced_columns: Dict[str, Dict[str, int]]
     column_types: Dict[str, str]
     summary_stats: Dict[str, Dict[str, Any]]
+    categorical_stats: Optional[Dict[str, Dict[str, Any]]] = None
 
 
 class CleaningRequest(BaseModel):

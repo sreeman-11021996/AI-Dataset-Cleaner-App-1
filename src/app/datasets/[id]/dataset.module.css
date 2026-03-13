@@ -561,4 +561,238 @@
     grid-template-columns: 1fr;
     gap: 0.25rem;
   }
+
+  .scoresGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .chartsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Quality Report Dashboard Styles */
+.reportHeader {
+  margin-bottom: 2rem;
+}
+
+.overallScore {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+}
+
+.scoreRing {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+}
+
+.scoreRing svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.scoreBg {
+  fill: none;
+  stroke: var(--border-color);
+  stroke-width: 8;
+}
+
+.scoreProgress {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.5s ease;
+}
+
+.scoreValue {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.scoreNumber {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.scoreLabel {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.scoreInfo h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.scoreRating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.scoreInfo p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.scoresGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.scoreCard {
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.scoreCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.scoreCardHeader svg {
+  color: var(--accent-primary);
+}
+
+.scoreCardValue {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.scoreCardBar {
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.scoreCardProgress {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.scoreCardDesc {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.chartsRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.chartCard {
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.chartCard h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+}
+
+.pieChartWrapper {
+  width: 100%;
+}
+
+.noIssues {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--accent-success);
+}
+
+.noIssues span {
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+}
+
+.issuesSummary {
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.issuesSummary h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.issuesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.issueItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.issueIcon {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.issueContent {
+  flex: 1;
+}
+
+.issueTitle {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.issueCount {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
 }

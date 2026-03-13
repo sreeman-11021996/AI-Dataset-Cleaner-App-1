@@ -57,22 +57,29 @@ Application is built and verified. To run the full application:
 
 ## Features Implemented
 
-1. Dataset Upload (CSV)
+1. Dataset Upload (CSV, Excel, JSON)
 2. Data Quality Analysis (missing values, duplicates, outliers)
-3. Cleaning Suggestions
-4. One-Click Cleaning
-5. Download Cleaned Dataset
-6. Visual Dashboard
-7. User Authentication
-8. Subscription Plans (Free/Pro)
-9. Dark/Light Theme Toggle
-10. Dashboard Overview with Charts
-11. Dataset History with Search/Filter
-12. Account Settings (Profile, Security, Notifications, Billing, Data)
+3. **Enhanced Analysis Engine (Latest)**
+   - Missing values detection with percentages
+   - Duplicate rows detection
+   - Outlier detection (IQR, Z-score, Modified Z-score methods)
+   - Categorical inconsistencies (case, whitespace)
+   - Class imbalance detection
+   - Quality scores: Completeness, Consistency, Balance, Overall (out of 100)
+4. Cleaning Suggestions
+5. One-Click Cleaning
+6. Download Cleaned Dataset
+7. Visual Quality Report Dashboard with charts
+8. User Authentication
+9. Subscription Plans (Free/Pro)
+10. Dark/Light Theme Toggle
+11. Dashboard Overview with Charts
+12. Dataset History with Search/Filter
+13. Account Settings (Profile, Security, Notifications, Billing, Data)
 
 ## Session History
 
 | Date | Changes |
 |------|---------|
 | Initial | Created DatasetCleaner AI SaaS application |
-| Latest | Improved UI/UX with modern SaaS dashboard, dark mode, charts, responsive design |
+| Latest | Enhanced analysis engine with quality scores (completeness, consistency, imbalance) out of 100; Visual report dashboard with charts (pie, radar, bar); Multiple outlier detection methods |
