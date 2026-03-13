@@ -170,6 +170,12 @@ export interface CleaningSuggestion {
   column: string | null;
   affected_rows: number | null;
   enabled: boolean;
+  column_type?: string;
+  issue_detected?: string;
+  recommendation?: string;
+  strategy?: string;
+  strategy_options?: string[];
+  priority?: number;
 }
 
 export interface Token {

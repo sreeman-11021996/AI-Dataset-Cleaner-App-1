@@ -113,7 +113,8 @@ export default function DatasetPage() {
       await api.post(`/api/cleaning/${datasetId}/clean`, {
         operations: enabledSuggestions.map(s => ({
           operation_type: s.operation_type,
-          column: s.column
+          column: s.column,
+          strategy: s.strategy
         }))
       });
       await loadDataset();
@@ -131,6 +132,33 @@ export default function DatasetPage() {
     setSuggestions(prev => 
       prev.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s)
     );
+  };
+
+  const updateStrategy = (id: string, strategy: string) => {
+    setSuggestions(prev =>
+      prev.map(s => s.id === id ? { ...s, strategy } : s)
+    );
+  };
+
+  const applySingleSuggestion = async (suggestion: CleaningSuggestion) => {
+    setCleaning(true);
+    try {
+      await api.post(`/api/cleaning/${datasetId}/clean`, {
+        operations: [{
+          operation_type: suggestion.operation_type,
+          column: suggestion.column,
+          strategy: suggestion.strategy
+        }]
+      });
+      await loadDataset();
+      await loadPreview();
+      await loadAnalysis();
+      await loadSuggestions();
+    } catch (err) {
+      alert('Failed to apply recommendation');
+    } finally {
+      setCleaning(false);
+    }
   };
 
   const handleDownload = async () => {
@@ -514,10 +542,16 @@ export default function DatasetPage() {
         {activeTab === 'clean' && (
           <div className={styles.cleanTab}>
             <div className={styles.suggestionsHeader}>
-              <h3>Cleaning Suggestions</h3>
-              <p>
-                {suggestions.filter(s => s.enabled).length} of {suggestions.length} suggestions enabled
-              </p>
+              <div>
+                <h3>AI Cleaning Recommendations</h3>
+                <p>
+                  {suggestions.filter(s => s.enabled).length} of {suggestions.length} recommendations enabled
+                </p>
+              </div>
+              <div className={styles.aiBadge}>
+                <Wand2 size={16} />
+                <span>AI Powered</span>
+              </div>
             </div>
 
             <div className={styles.suggestionsList}>
@@ -531,22 +565,86 @@ export default function DatasetPage() {
                 suggestions.map(suggestion => (
                   <div 
                     key={suggestion.id} 
-                    className={`${styles.suggestionCard} ${suggestion.enabled ? styles.enabled : ''}`}
-                    onClick={() => toggleSuggestion(suggestion.id)}
+                    className={`${styles.recommendationCard} ${suggestion.enabled ? styles.enabled : ''}`}
                   >
-                    <div className={styles.suggestionCheckbox}>
-                      {suggestion.enabled ? <Check size={16} /> : <div />}
+                    <div className={styles.recommendationHeader}>
+                      <div 
+                        className={styles.recommendationCheckbox}
+                        onClick={() => toggleSuggestion(suggestion.id)}
+                      >
+                        {suggestion.enabled ? <Check size={16} /> : <div />}
+                      </div>
+                      <div className={styles.recommendationTitle}>
+                        <span className={styles.operationType}>
+                          {suggestion.operation_type.replace(/_/g, ' ')}
+                        </span>
+                        {suggestion.column && (
+                          <span className={styles.columnBadge}>{suggestion.column}</span>
+                        )}
+                        {suggestion.column_type && (
+                          <span className={styles.typeBadge}>
+                            {suggestion.column_type}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`${styles.priorityBadge} ${styles[`priority${suggestion.priority}`]}`}>
+                        {suggestion.priority === 1 ? 'High' : suggestion.priority === 2 ? 'Medium' : 'Low'}
+                      </div>
                     </div>
-                    <div className={styles.suggestionInfo}>
-                      <span className={styles.suggestionType}>
-                        {suggestion.operation_type.replace(/_/g, ' ')}
-                      </span>
-                      <span className={styles.suggestionDesc}>{suggestion.description}</span>
+
+                    <div className={styles.recommendationBody}>
+                      <div className={styles.issueSection}>
+                        <AlertCircle size={14} />
+                        <span className={styles.issueText}>
+                          {suggestion.issue_detected || suggestion.description}
+                        </span>
+                      </div>
+                      {suggestion.recommendation && (
+                        <div className={styles.recommendationSection}>
+                          <Wand2 size={14} />
+                          <span className={styles.recommendationText}>
+                            {suggestion.recommendation}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {suggestion.strategy_options && suggestion.strategy_options.length > 1 && (
+                      <div className={styles.strategySection}>
+                        <span className={styles.strategyLabel}>Strategy:</span>
+                        <div className={styles.strategyOptions}>
+                          {suggestion.strategy_options.map((strategy) => (
+                            <button
+                              key={strategy}
+                              className={`${styles.strategyButton} ${suggestion.strategy === strategy ? styles.strategyActive : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateStrategy(suggestion.id, strategy);
+                              }}
+                            >
+                              {strategy.replace(/_/g, ' ')}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className={styles.recommendationFooter}>
                       {suggestion.affected_rows && (
-                        <span className={styles.affectedRows}>
-                          Affects {suggestion.affected_rows.toLocaleString()} rows
+                        <span className={styles.affectedCount}>
+                          {suggestion.affected_rows.toLocaleString()} rows affected
                         </span>
                       )}
+                      <button 
+                        className={styles.applyOneClick}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          applySingleSuggestion(suggestion);
+                        }}
+                      >
+                        <Wand2 size={14} />
+                        Apply
+                      </button>
                     </div>
                   </div>
                 ))

@@ -50,6 +50,13 @@ class CleaningSuggestion(BaseModel):
     column: Optional[str] = None
     affected_rows: Optional[int] = None
     enabled: bool = True
+    # Enhanced AI recommendation fields
+    column_type: Optional[str] = None
+    issue_detected: Optional[str] = None
+    recommendation: Optional[str] = None
+    strategy: Optional[str] = None
+    strategy_options: Optional[List[str]] = None
+    priority: Optional[int] = 3  # 1=high, 2=medium, 3=low
 
 
 class QualityScores(BaseModel):

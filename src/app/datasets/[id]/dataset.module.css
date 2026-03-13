@@ -796,3 +796,234 @@
   font-size: 0.8125rem;
   color: var(--text-secondary);
 }
+
+/* AI Recommendations Styles */
+.aiBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(0, 212, 170, 0.1) 100%);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 20px;
+  color: var(--accent-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.recommendationCard {
+  padding: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.recommendationCard:hover {
+  border-color: var(--border-light);
+}
+
+.recommendationCard.enabled {
+  border-color: var(--accent-primary);
+  background: rgba(0, 212, 170, 0.03);
+}
+
+.recommendationHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.recommendationCheckbox {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.recommendationCard.enabled .recommendationCheckbox {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #000;
+}
+
+.recommendationTitle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.operationType {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  text-transform: capitalize;
+}
+
+.columnBadge {
+  padding: 0.125rem 0.5rem;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent-primary);
+}
+
+.typeBadge {
+  padding: 0.125rem 0.5rem;
+  background: rgba(124, 58, 237, 0.1);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--accent-secondary);
+  text-transform: capitalize;
+}
+
+.priorityBadge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.priority1 {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-error);
+}
+
+.priority2 {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
+}
+
+.priority3 {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent-primary);
+}
+
+.recommendationBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-left: 2rem;
+}
+
+.issueSection,
+.recommendationSection {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.issueSection {
+  color: var(--text-secondary);
+}
+
+.issueSection svg {
+  color: var(--accent-warning);
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.recommendationSection {
+  color: var(--text-primary);
+}
+
+.recommendationSection svg {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.issueText,
+.recommendationText {
+  line-height: 1.4;
+}
+
+.strategySection {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  padding-left: 2rem;
+}
+
+.strategyLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.strategyOptions {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.strategyButton {
+  padding: 0.25rem 0.625rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: capitalize;
+}
+
+.strategyButton:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.strategyActive {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #000;
+}
+
+.recommendationFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 2rem;
+}
+
+.affectedCount {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.applyOneClick {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(0, 212, 170, 0.1);
+  border: 1px solid var(--accent-primary);
+  border-radius: 6px;
+  color: var(--accent-primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.applyOneClick:hover {
+  background: var(--accent-primary);
+  color: #000;
+}

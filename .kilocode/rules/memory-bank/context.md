@@ -59,27 +59,34 @@ Application is built and verified. To run the full application:
 
 1. Dataset Upload (CSV, Excel, JSON)
 2. Data Quality Analysis (missing values, duplicates, outliers)
-3. **Enhanced Analysis Engine (Latest)**
+3. Enhanced Analysis Engine
    - Missing values detection with percentages
    - Duplicate rows detection
    - Outlier detection (IQR, Z-score, Modified Z-score methods)
    - Categorical inconsistencies (case, whitespace)
    - Class imbalance detection
    - Quality scores: Completeness, Consistency, Balance, Overall (out of 100)
-4. Cleaning Suggestions
-5. One-Click Cleaning
-6. Download Cleaned Dataset
-7. Visual Quality Report Dashboard with charts
-8. User Authentication
-9. Subscription Plans (Free/Pro)
-10. Dark/Light Theme Toggle
-11. Dashboard Overview with Charts
-12. Dataset History with Search/Filter
-13. Account Settings (Profile, Security, Notifications, Billing, Data)
+4. **AI Cleaning Recommendations (Latest)**
+   - Column type analysis (numeric, categorical, text, datetime, identifier)
+   - Issue detection with detailed explanations
+   - Smart cleaning strategy recommendations
+   - Multiple strategy options per issue (mean/median/mode imputation, etc.)
+   - Priority-based sorting (High/Medium/Low)
+   - One-click apply for individual recommendations
+5. Cleaning Suggestions
+6. One-Click Cleaning
+7. Download Cleaned Dataset
+8. Visual Quality Report Dashboard with charts
+9. User Authentication
+10. Subscription Plans (Free/Pro)
+11. Dark/Light Theme Toggle
+12. Dashboard Overview with Charts
+13. Dataset History with Search/Filter
+14. Account Settings (Profile, Security, Notifications, Billing, Data)
 
 ## Session History
 
 | Date | Changes |
 |------|---------|
 | Initial | Created DatasetCleaner AI SaaS application |
-| Latest | Enhanced analysis engine with quality scores (completeness, consistency, imbalance) out of 100; Visual report dashboard with charts (pie, radar, bar); Multiple outlier detection methods |
+| Latest | Enhanced analysis engine with quality scores; Added AI cleaning recommendations with column type analysis, strategy options, priority levels, and one-click apply |
