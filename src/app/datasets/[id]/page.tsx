@@ -9,7 +9,7 @@ import {
   Wand2, Download, Check, X, ChevronDown, RefreshCw,
   AlertTriangle, AlertCircle, CheckCircle, Info,
   TrendingUp, TrendingDown, Minus, PieChart, Activity,
-  Layers, AlertOctagon, GitCompare
+  Layers, AlertOctagon, GitCompare, Zap, Play
 } from 'lucide-react';
 import {
   PieChart as RechartsPie,
@@ -52,6 +52,9 @@ export default function DatasetPage() {
   const [suggestions, setSuggestions] = useState<CleaningSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [cleaning, setCleaning] = useState(false);
+  const [autoCleanProgress, setAutoCleanProgress] = useState(0);
+  const [autoCleanSteps, setAutoCleanSteps] = useState<string[]>([]);
+  const [autoCleanComplete, setAutoCleanComplete] = useState(false);
 
   const datasetId = params.id as string;
 
@@ -158,6 +161,53 @@ export default function DatasetPage() {
       await loadSuggestions();
     } catch (err) {
       alert('Failed to apply recommendation');
+    } finally {
+      setCleaning(false);
+    }
+  };
+
+  const handleAutoClean = async () => {
+    setCleaning(true);
+    setAutoCleanProgress(10);
+    setAutoCleanSteps(['Starting auto-clean pipeline...']);
+    setAutoCleanComplete(false);
+
+    try {
+      const steps = [
+        'Analyzing dataset...',
+        'Removing duplicates...',
+        'Filling missing values...',
+        'Normalizing numeric columns...',
+        'Encoding categorical variables...',
+        'Handling outliers...',
+        'Finalizing...'
+      ];
+
+      for (let i = 0; i < steps.length; i++) {
+        setAutoCleanProgress(Math.round((i + 1) * (80 / steps.length)));
+        setAutoCleanSteps(prev => [...prev, steps[i]]);
+        await new Promise(resolve => setTimeout(resolve, 400));
+      }
+
+      const result = await api.post<{
+        steps_completed: string[];
+        original_rows: number;
+        new_rows: number;
+        original_columns: number;
+        new_columns: number;
+      }>(`/api/cleaning/${datasetId}/auto-clean`, {});
+
+      setAutoCleanSteps(result.steps_completed);
+      setAutoCleanProgress(100);
+      setAutoCleanComplete(true);
+
+      await loadDataset();
+      await loadPreview();
+      await loadAnalysis();
+      await loadSuggestions();
+    } catch (err) {
+      alert('Failed to auto-clean dataset');
+      setAutoCleanSteps(prev => [...prev, 'Error: Auto-clean failed']);
     } finally {
       setCleaning(false);
     }
@@ -543,6 +593,70 @@ export default function DatasetPage() {
 
         {activeTab === 'clean' && (
           <div className={styles.cleanTab}>
+            <div className={styles.autoCleanSection}>
+              <div className={styles.autoCleanHeader}>
+                <div className={styles.autoCleanInfo}>
+                  <Zap size={24} className={styles.autoCleanIcon} />
+                  <div>
+                    <h3>Auto Clean Dataset</h3>
+                    <p>Apply all cleaning operations automatically in one click</p>
+                  </div>
+                </div>
+                <button 
+                  className={styles.autoCleanButton}
+                  onClick={handleAutoClean}
+                  disabled={cleaning}
+                >
+                  {cleaning ? (
+                    <>
+                      <RefreshCw size={18} className={styles.spinning} />
+                      Cleaning...
+                    </>
+                  ) : (
+                    <>
+                      <Play size={18} />
+                      Auto Clean
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {cleaning && (
+                <div className={styles.autoCleanProgress}>
+                  <div className={styles.progressBarContainer}>
+                    <div 
+                      className={styles.progressBarFill}
+                      style={{ width: `${autoCleanProgress}%` }}
+                    />
+                  </div>
+                  <div className={styles.progressInfo}>
+                    <span className={styles.progressPercent}>{autoCleanProgress}%</span>
+                  </div>
+                  <div className={styles.stepsList}>
+                    {autoCleanSteps.map((step, index) => (
+                      <div key={index} className={styles.stepItem}>
+                        {index < autoCleanSteps.length - 1 || autoCleanComplete ? (
+                          <CheckCircle size={14} className={styles.stepComplete} />
+                        ) : (
+                          <RefreshCw size={14} className={styles.stepRunning} />
+                        )}
+                        <span>{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {autoCleanComplete && (
+                <div className={styles.autoCleanSuccess}>
+                  <CheckCircle size={20} />
+                  <span>Auto-clean completed successfully!</span>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.divider} />
+
             <div className={styles.suggestionsHeader}>
               <div>
                 <h3>AI Cleaning Recommendations</h3>

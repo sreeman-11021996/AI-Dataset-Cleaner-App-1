@@ -317,6 +317,142 @@
   animation: fadeIn 0.3s ease;
 }
 
+.autoCleanSection {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.autoCleanHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.autoCleanInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.autoCleanIcon {
+  color: var(--accent-warning);
+}
+
+.autoCleanInfo h3 {
+  font-size: 1.125rem;
+  margin-bottom: 0.25rem;
+}
+
+.autoCleanInfo p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.autoCleanButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--accent-warning) 0%, #f59e0b 100%);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.autoCleanButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.autoCleanButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.autoCleanProgress {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.progressBarContainer {
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-warning) 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progressInfo {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.progressPercent {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.stepsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.stepComplete {
+  color: var(--accent-success);
+}
+
+.stepRunning {
+  color: var(--accent-warning);
+  animation: spin 1s linear infinite;
+}
+
+.autoCleanSuccess {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  color: var(--accent-success);
+  font-weight: 500;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 1.5rem 0;
+}
+
 .suggestionsHeader {
   display: flex;
   justify-content: space-between;

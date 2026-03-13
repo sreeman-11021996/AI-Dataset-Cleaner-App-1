@@ -66,16 +66,25 @@ Application is built and verified. To run the full application:
    - Categorical inconsistencies (case, whitespace)
    - Class imbalance detection
    - Quality scores: Completeness, Consistency, Balance, Overall (out of 100)
-4. **AI Cleaning Recommendations (Latest)**
+4. **AI Cleaning Recommendations**
    - Column type analysis (numeric, categorical, text, datetime, identifier)
    - Issue detection with detailed explanations
    - Smart cleaning strategy recommendations
    - Multiple strategy options per issue (mean/median/mode imputation, etc.)
    - Priority-based sorting (High/Medium/Low)
    - One-click apply for individual recommendations
-5. Cleaning Suggestions
-6. One-Click Cleaning
-7. Download Cleaned Dataset
+5. **Auto Clean Pipeline (Latest)**
+   - One-click automatic cleaning
+   - Removes duplicates
+   - Fills missing values
+   - Normalizes numeric columns
+   - Encodes categorical variables
+   - Handles outliers
+   - Progress bar with status updates
+   - Download cleaned dataset
+6. Cleaning Suggestions
+7. One-Click Cleaning
+8. Download Cleaned Dataset
 8. Visual Quality Report Dashboard with charts
 9. User Authentication
 10. Subscription Plans (Free/Pro)
@@ -89,4 +98,4 @@ Application is built and verified. To run the full application:
 | Date | Changes |
 |------|---------|
 | Initial | Created DatasetCleaner AI SaaS application |
-| Latest | Enhanced analysis engine with quality scores; Added AI cleaning recommendations with column type analysis, strategy options, priority levels, and one-click apply |
+| Latest | Added AI cleaning recommendations; Added Auto Clean Pipeline with progress bar and status updates |

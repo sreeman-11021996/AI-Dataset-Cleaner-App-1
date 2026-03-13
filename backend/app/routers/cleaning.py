@@ -569,3 +569,142 @@ async def clean_dataset(
         "new_rows": new_row_count,
         "rows_removed": original_rows - new_row_count
     }
+
+
+@router.post("/{dataset_id}/auto-clean")
+async def auto_clean_dataset(
+    dataset_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Automatic cleaning pipeline that applies all standard cleaning operations"""
+    dataset = db.query(DatasetModel).filter(
+        DatasetModel.id == dataset_id,
+        DatasetModel.user_id == current_user.id
+    ).first()
+    
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    try:
+        if dataset.original_filename.endswith('.csv'):
+            df = pd.read_csv(dataset.file_path)
+        elif dataset.original_filename.endswith(('.xlsx', '.xls')):
+            df = pd.read_excel(dataset.file_path)
+        elif dataset.original_filename.endswith('.json'):
+            df = pd.read_json(dataset.file_path)
+        else:
+            df = pd.read_csv(dataset.file_path)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read dataset: {str(e)}")
+    
+    original_rows = len(df)
+    original_cols = len(df.columns)
+    steps_completed = []
+    steps_total = 5
+    
+    # Step 1: Remove duplicates
+    dup_count = df.duplicated().sum()
+    if dup_count > 0:
+        df = df.drop_duplicates()
+        steps_completed.append(f"Removed {dup_count} duplicate rows")
+    
+    # Step 2: Fill missing values
+    missing_total = df.isnull().sum().sum()
+    if missing_total > 0:
+        for col in df.columns:
+            missing = df[col].isnull().sum()
+            if missing > 0:
+                if pd.api.types.is_numeric_dtype(df[col]):
+                    df[col] = df[col].fillna(df[col].median())
+                else:
+                    mode_val = df[col].mode()
+                    if len(mode_val) > 0:
+                        df[col] = df[col].fillna(mode_val[0])
+                    else:
+                        df[col] = df[col].fillna("")
+        steps_completed.append(f"Filled {missing_total} missing values")
+    
+    # Step 3: Normalize numeric columns
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    if numeric_cols:
+        for col in numeric_cols:
+            min_val = df[col].min()
+            max_val = df[col].max()
+            if max_val > min_val:
+                df[col] = (df[col] - min_val) / (max_val - min_val)
+        steps_completed.append(f"Normalized {len(numeric_cols)} numeric columns")
+    
+    # Step 4: Encode categorical variables
+    categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
+    encoded_cols = 0
+    for col in categorical_cols:
+        unique_count = df[col].nunique()
+        if unique_count <= 10 and unique_count > 1:
+            dummies = pd.get_dummies(df[col], prefix=col, drop_first=True)
+            df = pd.concat([df, dummies], axis=1)
+            df = df.drop(columns=[col])
+            encoded_cols += 1
+    if encoded_cols > 0:
+        steps_completed.append(f"Encoded {encoded_cols} categorical columns")
+    
+    # Step 5: Handle outliers (cap at IQR boundaries)
+    for col in df.select_dtypes(include=[np.number]).columns:
+        clean_series = df[col].dropna()
+        if len(clean_series) > 0:
+            Q1 = clean_series.quantile(0.25)
+            Q3 = clean_series.quantile(0.75)
+            IQR = Q3 - Q1
+            if IQR > 0:
+                lower = Q1 - 1.5 * IQR
+                upper = Q3 + 1.5 * IQR
+                df[col] = df[col].clip(lower, upper)
+    steps_completed.append("Handled outliers in numeric columns")
+    
+    new_rows = len(df)
+    new_cols = len(df.columns)
+    
+    # Save the cleaned dataset
+    if dataset.original_filename.endswith('.csv'):
+        df.to_csv(dataset.file_path, index=False)
+    elif dataset.original_filename.endswith(('.xlsx', '.xls')):
+        df.to_excel(dataset.file_path, index=False)
+    else:
+        df.to_csv(dataset.file_path, index=False)
+    
+    dataset.row_count = new_rows
+    dataset.column_count = new_cols
+    
+    columns = []
+    for col in df.columns:
+        col_info = {
+            "name": col,
+            "dtype": str(df[col].dtype),
+            "nullable": bool(df[col].isnull().any()),
+            "unique_count": int(df[col].nunique())
+        }
+        columns.append(col_info)
+    dataset.columns = columns
+    
+    cleaning_op = CleaningOperation(
+        dataset_id=dataset_id,
+        operation_type="auto_clean:" + ",".join(steps_completed),
+        parameters=[{"operation": "auto_clean"}]
+    )
+    db.add(cleaning_op)
+    
+    current_user.operations_used += 1
+    
+    db.commit()
+    
+    return {
+        "message": "Auto-clean completed successfully",
+        "steps_completed": steps_completed,
+        "steps_total": steps_total,
+        "original_rows": original_rows,
+        "new_rows": new_rows,
+        "rows_removed": original_rows - new_rows,
+        "original_columns": original_cols,
+        "new_columns": new_cols,
+        "columns_added": new_cols - original_cols
+    }
