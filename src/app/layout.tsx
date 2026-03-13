@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { GoogleOAuthProvider } from "@/contexts/GoogleOAuthContext";
 
 export const metadata: Metadata = {
   title: "DatasetCleaner AI",
@@ -17,9 +18,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <GoogleOAuthProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </GoogleOAuthProvider>
         </ThemeProvider>
       </body>
     </html>

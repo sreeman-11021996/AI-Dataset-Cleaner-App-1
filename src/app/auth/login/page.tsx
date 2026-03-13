@@ -1,33 +1,61 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGoogleOAuth } from '@/contexts/GoogleOAuthContext';
 import { Database, ArrowLeft, Mail, Lock } from 'lucide-react';
 import styles from '../../auth.module.css';
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: any) => void;
-          renderButton: (element: HTMLElement, config: any) => void;
-          prompt: () => void;
-        };
-      };
-    };
-  }
-}
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { isInitialized, clientId } = useGoogleOAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isInitialized || !clientId || clientId === 'your-google-client-id.apps.googleusercontent.com') {
+      return;
+    }
+
+    if (window.google?.accounts?.id) {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: { credential: string }) => {
+          setLoading(true);
+          setError('');
+          
+          try {
+            const res = await fetch('http://localhost:8000/api/auth/oauth/google', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id_token: response.credential })
+            });
+            
+            if (!res.ok) {
+              throw new Error('Google login failed');
+            }
+            
+            const tokens = await res.json();
+            localStorage.setItem('access_token', tokens.access_token);
+            localStorage.setItem('refresh_token', tokens.refresh_token);
+            
+            router.push('/dashboard');
+          } catch (err: any) {
+            setError('Google login failed. Please try again.');
+          } finally {
+            setLoading(false);
+          }
+        },
+        auto_select: false,
+        cancel_on_tap_outside: false,
+      });
+    }
+  }, [isInitialized, clientId, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,33 +71,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
-  const handleGoogleLogin = useCallback(async (credential: string) => {
-    setLoading(true);
-    setError('');
-    
-    try {
-      const response = await fetch('http://localhost:8000/api/auth/oauth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: credential })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Google login failed');
-      }
-      
-      const tokens = await response.json();
-      localStorage.setItem('access_token', tokens.access_token);
-      localStorage.setItem('refresh_token', tokens.refresh_token);
-      
-      router.push('/dashboard');
-    } catch (err: any) {
-      setError('Google login failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
 
   return (
     <div className={styles.container}>
