@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, datasets, analysis, cleaning, subscription, api, kaggle
+from app.routers import auth, datasets, analysis, cleaning, subscription, api, kaggle, export
 from app.core.database import engine
 from app.models import base
 
@@ -27,6 +27,7 @@ app.include_router(cleaning.router, prefix="/api/cleaning", tags=["Cleaning"])
 app.include_router(subscription.router, prefix="/api/subscription", tags=["Subscription"])
 app.include_router(api.router, prefix="/api", tags=["Developer API"])
 app.include_router(kaggle.router, prefix="/api/datasets", tags=["Kaggle Import"])
+app.include_router(export.router, prefix="/api/datasets", tags=["ML Pipeline Export"])
 
 
 @app.get("/")

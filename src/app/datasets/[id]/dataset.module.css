@@ -598,36 +598,49 @@
   animation: fadeIn 0.3s ease;
   display: flex;
   gap: 2rem;
+  flex-wrap: wrap;
   justify-content: center;
   padding-top: 2rem;
 }
 
-.exportCard {
+.exportGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
   flex: 1;
-  max-width: 400px;
+}
+
+.exportCard {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 3rem;
+  padding: 2rem;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   text-align: center;
+  transition: all 0.2s;
+}
+
+.exportCard:hover {
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
 }
 
 .exportCard svg {
   color: var(--accent-primary);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .exportCard h3 {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   margin-bottom: 0.5rem;
 }
 
 .exportCard p {
   color: var(--text-secondary);
-  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
 }
 
 .downloadButton {
@@ -648,14 +661,34 @@
   filter: brightness(1.1);
 }
 
+.exportPipelineButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.exportPipelineButton:hover {
+  background: var(--accent-primary);
+  color: #000;
+  border-color: var(--accent-primary);
+}
+
 .exportInfo {
-  flex: 1;
-  max-width: 300px;
+  width: 100%;
+  max-width: 800px;
   padding: 1.5rem;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  height: fit-content;
+  margin-top: 1rem;
 }
 
 .exportInfo h4 {

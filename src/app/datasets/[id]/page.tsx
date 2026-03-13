@@ -9,7 +9,8 @@ import {
   Wand2, Download, Check, X, ChevronDown, RefreshCw,
   AlertTriangle, AlertCircle, CheckCircle, Info,
   TrendingUp, TrendingDown, Minus, PieChart, Activity,
-  Layers, AlertOctagon, GitCompare, Zap, Play
+  Layers, AlertOctagon, GitCompare, Zap, Play,
+  FileCode, Notebook, FileJson
 } from 'lucide-react';
 import {
   PieChart as RechartsPie,
@@ -216,6 +217,21 @@ export default function DatasetPage() {
   const handleDownload = async () => {
     const token = localStorage.getItem('access_token');
     window.open(`http://localhost:8000/api/datasets/${datasetId}/download?token=${token}`, '_blank');
+  };
+
+  const handleExportScript = () => {
+    const token = localStorage.getItem('access_token');
+    window.open(`http://localhost:8000/api/datasets/${datasetId}/export/script?token=${token}`, '_blank');
+  };
+
+  const handleExportSklearn = () => {
+    const token = localStorage.getItem('access_token');
+    window.open(`http://localhost:8000/api/datasets/${datasetId}/export/sklearn?token=${token}`, '_blank');
+  };
+
+  const handleExportNotebook = () => {
+    const token = localStorage.getItem('access_token');
+    window.open(`http://localhost:8000/api/datasets/${datasetId}/export/notebook?token=${token}`, '_blank');
   };
 
   const formatFileSize = (bytes: number) => {
@@ -791,15 +807,48 @@ export default function DatasetPage() {
 
         {activeTab === 'export' && (
           <div className={styles.exportTab}>
-            <div className={styles.exportCard}>
-              <FileSpreadsheet size={48} />
-              <h3>Download Cleaned Dataset</h3>
-              <p>Your dataset is ready to download</p>
-              <button className={styles.downloadButton} onClick={handleDownload}>
-                <Download size={20} />
-                Download CSV
-              </button>
+            <div className={styles.exportGrid}>
+              <div className={styles.exportCard}>
+                <FileSpreadsheet size={48} />
+                <h3>Download Cleaned Dataset</h3>
+                <p>Export your cleaned data as CSV</p>
+                <button className={styles.downloadButton} onClick={handleDownload}>
+                  <Download size={20} />
+                  Download CSV
+                </button>
+              </div>
+
+              <div className={styles.exportCard}>
+                <FileCode size={48} />
+                <h3>Python Script</h3>
+                <p>Pandas-based preprocessing pipeline</p>
+                <button className={styles.exportPipelineButton} onClick={handleExportScript}>
+                  <Download size={20} />
+                  Export .py
+                </button>
+              </div>
+
+              <div className={styles.exportCard}>
+                <Notebook size={48} />
+                <h3>scikit-learn Pipeline</h3>
+                <p>Reusable sklearn Pipeline with transformers</p>
+                <button className={styles.exportPipelineButton} onClick={handleExportSklearn}>
+                  <Download size={20} />
+                  Export .py
+                </button>
+              </div>
+
+              <div className={styles.exportCard}>
+                <FileJson size={48} />
+                <h3>Jupyter Notebook</h3>
+                <p>Interactive notebook with step-by-step code</p>
+                <button className={styles.exportPipelineButton} onClick={handleExportNotebook}>
+                  <Download size={20} />
+                  Export .ipynb
+                </button>
+              </div>
             </div>
+
             <div className={styles.exportInfo}>
               <h4>Dataset Information</h4>
               <div className={styles.infoRow}>
