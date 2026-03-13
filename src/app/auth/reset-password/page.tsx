@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Database, ArrowLeft, Lock, CheckCircle } from 'lucide-react';
-import styles from '../auth.module.css';
+import styles from '../../auth.module.css';
 
 function ResetPasswordForm() {
   const router = useRouter();
