@@ -5,13 +5,43 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User
+from app.models.user import User, PLAN_LIMITS
 from app.models.user import Dataset as DatasetModel
 from app.models.user import CleaningOperation
 from app.schemas.dataset import CleaningSuggestion, CleaningRequest
 from typing import List
 
 router = APIRouter()
+
+
+def check_operation_limit(user: User):
+    """Check if user can perform another operation"""
+    tier = user.subscription_tier.value if hasattr(user.subscription_tier, 'value') else str(user.subscription_tier)
+    limits = PLAN_LIMITS.get(tier, PLAN_LIMITS["free"])
+    max_ops = limits["max_daily_operations"]
+    
+    if max_ops > 0 and user.operations_used >= max_ops:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Daily operation limit reached. Upgrade to {tier.title()} plan for more."
+        )
+
+
+def check_feature_access(user: User, feature: str):
+    """Check if user has access to a specific feature"""
+    tier = user.subscription_tier.value if hasattr(user.subscription_tier, 'value') else str(user.subscription_tier)
+    limits = PLAN_LIMITS.get(tier, PLAN_LIMITS["free"])
+    
+    feature_map = {
+        "advanced_cleaning": "Advanced cleaning features",
+        "quality_reports": "Quality reports",
+    }
+    
+    if feature in limits and not limits[feature]:
+        raise HTTPException(
+            status_code=403,
+            detail=f"{feature_map.get(feature, feature)} is not available on your plan"
+        )
 
 
 def detect_column_type(df: pd.DataFrame, col: str) -> str:
@@ -378,6 +408,8 @@ async def clean_dataset(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    check_operation_limit(current_user)
+    
     dataset = db.query(DatasetModel).filter(
         DatasetModel.id == dataset_id,
         DatasetModel.user_id == current_user.id
@@ -578,6 +610,8 @@ async def auto_clean_dataset(
     current_user: User = Depends(get_current_user)
 ):
     """Automatic cleaning pipeline that applies all standard cleaning operations"""
+    check_operation_limit(current_user)
+    
     dataset = db.query(DatasetModel).filter(
         DatasetModel.id == dataset_id,
         DatasetModel.user_id == current_user.id

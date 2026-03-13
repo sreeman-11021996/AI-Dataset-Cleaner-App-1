@@ -111,9 +111,21 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
-  subscription_tier: 'free' | 'pro';
+  subscription_tier: 'free' | 'pro' | 'team';
   storage_used: number;
   operations_used: number;
+  daily_operations_remaining: number;
+  plan_limits: {
+    max_file_size_mb: number;
+    max_datasets: number;
+    max_daily_operations: number;
+    advanced_cleaning: boolean;
+    quality_reports: boolean;
+    api_access: boolean;
+    team_workspace: boolean;
+  };
+  team_id?: string;
+  team_role?: string;
   created_at: string;
 }
 

@@ -10,6 +10,51 @@ from app.core.database import Base
 class SubscriptionTier(str, enum.Enum):
     free = "free"
     pro = "pro"
+    team = "team"
+
+
+# Plan limits
+PLAN_LIMITS = {
+    "free": {
+        "max_file_size_mb": 5,
+        "max_datasets": 10,
+        "max_daily_operations": 10,
+        "advanced_cleaning": False,
+        "quality_reports": False,
+        "api_access": False,
+        "team_workspace": False,
+    },
+    "pro": {
+        "max_file_size_mb": 100,
+        "max_datasets": 100,
+        "max_daily_operations": 100,
+        "advanced_cleaning": True,
+        "quality_reports": True,
+        "api_access": False,
+        "team_workspace": False,
+    },
+    "team": {
+        "max_file_size_mb": 500,
+        "max_datasets": -1,  # unlimited
+        "max_daily_operations": -1,  # unlimited
+        "advanced_cleaning": True,
+        "quality_reports": True,
+        "api_access": True,
+        "team_workspace": True,
+    },
+}
+
+
+class Team(Base):
+    __tablename__ = "teams"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    members = relationship("User", back_populates="team")
 
 
 class User(Base):
@@ -36,8 +81,16 @@ class User(Base):
     # Email verification
     is_verified = Column(Boolean, default=False)
     verification_token = Column(String(255), nullable=True)
+    
+    # Team features
+    team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=True)
+    team_role = Column(String(50), nullable=True)  # owner, admin, member
+    
+    # Daily usage tracking
+    daily_operations_reset = Column(DateTime, nullable=True)
 
     datasets = relationship("Dataset", back_populates="user")
+    team = relationship("Team", back_populates="members")
 
 
 class Dataset(Base):

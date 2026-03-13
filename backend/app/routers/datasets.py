@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User, SubscriptionTier
+from app.models.user import User, SubscriptionTier, PLAN_LIMITS
 from app.models.user import Dataset as DatasetModel
 from app.schemas.dataset import DatasetResponse, DatasetPreview, ColumnInfo
 
@@ -14,10 +14,47 @@ router = APIRouter()
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-MAX_FILE_SIZES = {
-    SubscriptionTier.free: 5 * 1024 * 1024,  # 5MB
-    SubscriptionTier.pro: 100 * 1024 * 1024,  # 100MB
-}
+
+def check_subscription_limits(user: User, file_size: int = 0, operation: bool = False):
+    """Check if user has reached their subscription limits"""
+    tier = user.subscription_tier.value if hasattr(user.subscription_tier, 'value') else str(user.subscription_tier)
+    limits = PLAN_LIMITS.get(tier, PLAN_LIMITS["free"])
+    
+    if operation:
+        max_ops = limits["max_daily_operations"]
+        if max_ops > 0 and user.operations_used >= max_ops:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Daily operation limit reached. Upgrade to {tier.title()} plan for more."
+            )
+    
+    if file_size > 0:
+        max_size_mb = limits["max_file_size_mb"]
+        max_size_bytes = max_size_mb * 1024 * 1024
+        if file_size > max_size_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File size exceeds {max_size_mb}MB limit for {tier} plan"
+            )
+
+
+def check_feature_access(user: User, feature: str):
+    """Check if user has access to a specific feature"""
+    tier = user.subscription_tier.value if hasattr(user.subscription_tier, 'value') else str(user.subscription_tier)
+    limits = PLAN_LIMITS.get(tier, PLAN_LIMITS["free"])
+    
+    feature_map = {
+        "advanced_cleaning": "Advanced cleaning features",
+        "quality_reports": "Quality reports",
+        "api_access": "API access",
+        "team_workspace": "Team workspace",
+    }
+    
+    if feature in limits and not limits[feature]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"{feature_map.get(feature, feature)} is not available on your plan"
+        )
 
 
 @router.post("/upload", response_model=DatasetResponse)
@@ -32,20 +69,10 @@ async def upload_dataset(
             detail="Only CSV files are allowed"
         )
     
-    max_size = MAX_FILE_SIZES.get(current_user.subscription_tier, 5 * 1024 * 1024)
-    
     content = await file.read()
-    if len(content) > max_size:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File size exceeds {max_size // (1024*1024)}MB limit for {current_user.subscription_tier} plan"
-        )
+    file_size = len(content)
     
-    if current_user.storage_used + len(content) > (5 * 1024 * 1024 * 1024 if current_user.subscription_tier == SubscriptionTier.pro else 100 * 1024 * 1024):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Storage limit exceeded"
-        )
+    check_subscription_limits(current_user, file_size=file_size)
     
     file_id = str(uuid.uuid4())
     file_path = UPLOAD_DIR / f"{file_id}.csv"

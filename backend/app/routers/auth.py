@@ -12,11 +12,34 @@ from app.core.security import (
     get_password_hash, verify_password, 
     create_access_token, create_refresh_token, decode_token
 )
-from app.models.user import User
-from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, TokenRefresh
+from app.models.user import User, PLAN_LIMITS
+from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, TokenRefresh, PlanLimits
 from app.core.security import get_current_user
 
 router = APIRouter()
+
+
+def get_user_with_limits(user: User) -> dict:
+    """Get user data with plan limits"""
+    tier = user.subscription_tier.value if hasattr(user.subscription_tier, 'value') else str(user.subscription_tier)
+    limits = PLAN_LIMITS.get(tier, PLAN_LIMITS["free"])
+    
+    max_ops = limits["max_daily_operations"]
+    daily_remaining = max_ops - user.operations_used if max_ops > 0 else -1
+    
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "subscription_tier": tier,
+        "storage_used": user.storage_used,
+        "operations_used": user.operations_used,
+        "daily_operations_remaining": daily_remaining,
+        "plan_limits": PlanLimits(**limits),
+        "team_id": user.team_id,
+        "team_role": user.team_role,
+        "created_at": user.created_at,
+    }
 
 
 # Pydantic schemas for new endpoints
@@ -82,7 +105,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
+    return get_user_with_limits(user)
 
 
 @router.post("/login", response_model=Token)
@@ -131,7 +154,7 @@ async def refresh_token(token_data: TokenRefresh, db: Session = Depends(get_db))
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
-    return current_user
+    return get_user_with_limits(current_user)
 
 
 @router.post("/password-reset-request")

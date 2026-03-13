@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -18,6 +19,7 @@ import {
   Sun,
   Bell,
   Database,
+  Zap,
 } from 'lucide-react';
 import { useState } from 'react';
 import styles from './layout.module.css';
@@ -38,6 +40,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const { user, loading: authLoading, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { isPro, isTeam, planLimits, remainingOps } = useSubscription();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -113,7 +116,7 @@ export default function DashboardLayout({
                 <div className={styles.userDetails}>
                   <span className={styles.userEmail}>{user.email}</span>
                   <span className={styles.userPlan}>
-                    {user.subscription_tier === 'pro' ? 'Pro Plan' : 'Free Plan'}
+                    {isTeam ? 'Team Plan' : isPro ? 'Pro Plan' : 'Free Plan'}
                   </span>
                 </div>
               )}
@@ -153,7 +156,11 @@ export default function DashboardLayout({
             </button>
             <div className={styles.headerStorage}>
               <Database size={16} />
-              <span>{formatStorage(user.storage_used)} / {user.subscription_tier === 'pro' ? '5GB' : '100MB'}</span>
+              <span>{formatStorage(user.storage_used)} / {isTeam ? '500MB' : isPro ? '100MB' : '5GB'}</span>
+            </div>
+            <div className={styles.headerStorage}>
+              <Zap size={16} />
+              <span>{remainingOps === -1 ? '∞' : remainingOps} ops</span>
             </div>
           </div>
         </header>
